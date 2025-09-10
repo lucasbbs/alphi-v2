@@ -102,7 +102,7 @@ export default function JeuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100 p-4">
+    <div className="w-full bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100 p-4 min-h-screen">
       <div className="max-w-4xl mx-auto">
         {/* En-tête du jeu */}
         <div className="bg-white rounded-3xl shadow-lg p-6 mb-6">

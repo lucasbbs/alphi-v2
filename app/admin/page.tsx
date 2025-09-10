@@ -31,7 +31,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-orange-50 to-orange-100 p-6">
+    <div className="w-full bg-gradient-to-br from-orange-100 via-orange-50 to-orange-100 p-6 min-h-screen">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-3xl shadow-lg p-8 mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
