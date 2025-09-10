@@ -11,7 +11,7 @@ export default function Footer() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Steven Tey
+          Maïna Fergie Abega de Abega
         </a>
       </p>
       <a
