@@ -87,7 +87,7 @@ export default function JeuPage() {
 
   const handleGenderSelection = (gender: string) => {
     setSelectedGender(gender)
-    setCurrentStep(4)
+    // Pas besoin de changer d'étape ici, on reste à l'étape 4 pour afficher le feedback
   }
 
   if (!user) {
@@ -287,23 +287,44 @@ export default function JeuPage() {
             </div>
 
             {selectedGender && (
-              <div className="bg-gradient-to-r from-green-100 to-teal-100 rounded-2xl p-6 text-center">
-                <div className="text-4xl mb-4">🎉</div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Félicitations !</h3>
+              <div className={`rounded-2xl p-6 text-center ${
+                selectedGender === 'masculin' 
+                  ? 'bg-gradient-to-r from-green-100 to-teal-100' 
+                  : 'bg-gradient-to-r from-red-100 to-pink-100'
+              }`}>
+                <div className="text-4xl mb-4">
+                  {selectedGender === 'masculin' ? '🎉' : '❌'}
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  {selectedGender === 'masculin' ? 'Bravo !' : 'Pas tout à fait...'}
+                </h3>
                 <p className="text-gray-600 mb-4">
-                  Vous avez terminé l'exercice ! Le mot &quot;{foundWord}&quot; est effectivement {selectedGender}.
+                  {selectedGender === 'masculin' 
+                    ? `Excellent ! Le mot "horaire" est effectivement masculin. On dit "un horaire".`
+                    : `Le mot "horaire" est masculin, pas féminin. On dit "un horaire", pas "une horaire". Par exemple : "Mon horaire de travail commence à 9h."`
+                  }
                 </p>
-                <button 
-                  onClick={() => {
-                    setCurrentStep(1)
-                    setSelectedPoem(null)
-                    setFoundWord('')
-                    setSelectedGender('')
-                  }}
-                  className="bg-green-500 text-white px-8 py-3 rounded-full font-semibold hover:bg-green-600 transition-colors"
-                >
-                  Rejouer 🔄
-                </button>
+                <div className="flex justify-center space-x-4">
+                  <button 
+                    onClick={() => {
+                      setCurrentStep(1)
+                      setSelectedPoem(null)
+                      setFoundWord('')
+                      setSelectedGender('')
+                    }}
+                    className="bg-green-500 text-white px-8 py-3 rounded-full font-semibold hover:bg-green-600 transition-colors"
+                  >
+                    Rejouer 🔄
+                  </button>
+                  {selectedGender === 'féminin' && (
+                    <button 
+                      onClick={() => setSelectedGender('')}
+                      className="bg-orange-500 text-white px-8 py-3 rounded-full font-semibold hover:bg-orange-600 transition-colors"
+                    >
+                      Réessayer 🔁
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
