@@ -1,11 +1,33 @@
-import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
+'use client'
 
-export default async function AdminPage() {
-  const { userId } = await auth()
+import { useUser } from '@clerk/nextjs'
+
+export default function AdminPage() {
+  const { user, isLoaded } = useUser()
   
-  if (!userId) {
-    redirect('/sign-in')
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-orange-50 to-orange-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-orange-50 to-orange-100 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Accès Restreint</h1>
+          <p className="text-gray-600 mb-6">Vous devez être connecté pour accéder à l'interface d'administration.</p>
+          <a href="/sign-in" className="bg-orange-500 text-white px-6 py-3 rounded-full font-medium hover:bg-orange-600 transition-colors">
+            Se Connecter
+          </a>
+        </div>
+      </div>
+    )
   }
 
   return (
