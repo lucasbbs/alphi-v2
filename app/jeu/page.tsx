@@ -41,13 +41,13 @@ const samplePoems: Poem[] = [
     image: '/logo.png',
     verse: 'Demain, l\'hiver viendra poser sa main froide sur nos rêves.',
     words: [
-      { word: 'Demain', class: 'adverbe', isSelected: false },
-      { word: 'l\'', class: 'déterminant défini', isSelected: false },
-      { word: 'viendra', class: 'verbe', isSelected: false },
-      { word: 'sa', class: 'déterminant possessif', isSelected: false },
-      { word: 'froide', class: 'adjectif', isSelected: false },
-      { word: 'sur', class: 'préposition', isSelected: false },
-      { word: 'rêves', class: 'nom commun', isSelected: false }
+      { word: 'rêves', class: 'nom commun', isSelected: false },      // H
+      { word: 'Demain', class: 'adverbe', isSelected: false },        // O
+      { word: 'l\'', class: 'déterminant défini', isSelected: false }, // R
+      { word: 'viendra', class: 'verbe', isSelected: false },         // A
+      { word: 'sa', class: 'déterminant possessif', isSelected: false }, // I
+      { word: 'froide', class: 'adjectif', isSelected: false },       // R
+      { word: 'sur', class: 'préposition', isSelected: false }        // E
     ]
   }
 ]
