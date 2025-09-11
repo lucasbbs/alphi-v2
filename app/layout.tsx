@@ -7,6 +7,7 @@ import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import Navbar from "@/components/layout/navbar";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "react-hot-toast";
+import { ReduxProvider } from "@/lib/store/provider";
 
 export const metadata = {
   title: "Precedent - Building blocks for your Next.js project",
@@ -22,15 +23,16 @@ export default async function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body className={cx(sfPro.variable, inter.variable)}>
-          <div className="fixed h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-cyan-100 -z-10" />
-          <Suspense fallback="...">
-            <Navbar />
-          </Suspense>
-          <main className="relative z-10 flex min-h-screen w-full flex-col items-center py-16">
-            {children}
-          </main>
+      <ReduxProvider>
+        <html lang="en">
+          <body className={cx(sfPro.variable, inter.variable)}>
+            <div className="fixed h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-cyan-100 -z-10" />
+            <Suspense fallback="...">
+              <Navbar />
+            </Suspense>
+            <main className="relative z-10 flex min-h-screen w-full flex-col items-center py-16">
+              {children}
+            </main>
           <Footer />
           <Toaster
             position="top-center"
@@ -46,8 +48,9 @@ export default async function RootLayout({
             }}
           />
           <VercelAnalytics />
-        </body>
-      </html>
+          </body>
+        </html>
+      </ReduxProvider>
     </ClerkProvider>
   );
 }

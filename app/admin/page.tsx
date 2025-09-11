@@ -1,9 +1,17 @@
 'use client'
 
+import { useState } from 'react'
 import { useUser } from '@clerk/nextjs'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
+import GameCreator from '@/components/admin/GameCreator'
+import { Poem } from '@/lib/store/gameSlice'
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser()
+  const poems = useSelector((state: RootState) => state.game.poems)
+  const [currentView, setCurrentView] = useState<'dashboard' | 'create-game'>('dashboard')
+  const [editingPoem, setEditingPoem] = useState<Poem | null>(null)
   
   if (!isLoaded) {
     return (
@@ -25,6 +33,33 @@ export default function AdminPage() {
           <a href="/sign-in" className="bg-orange-500 text-white px-6 py-3 rounded-full font-medium hover:bg-orange-600 transition-colors">
             Se Connecter
           </a>
+        </div>
+      </div>
+    )
+  }
+
+  const handleTestGame = (poem: Poem) => {
+    // Sauvegarder le poème de test dans sessionStorage pour éviter les limites d'URL
+    sessionStorage.setItem('alphi-test-poem', JSON.stringify(poem))
+    // Ouvrir le jeu avec un simple flag de test
+    const gameUrl = `/jeu?test=true`
+    window.open(gameUrl, '_blank')
+  }
+
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard')
+    setEditingPoem(null)
+  }
+
+  if (currentView === 'create-game') {
+    return (
+      <div className="w-full bg-gradient-to-br from-orange-100 via-orange-50 to-orange-100 p-6 min-h-screen">
+        <div className="max-w-6xl mx-auto">
+          <GameCreator
+            editingPoem={editingPoem}
+            onCancel={handleBackToDashboard}
+            onTestGame={handleTestGame}
+          />
         </div>
       </div>
     )
@@ -53,7 +88,10 @@ export default function AdminPage() {
               <p className="text-orange-100 mb-4">
                 Gérez les poèmes, images et exercices de grammaire
               </p>
-              <button className="bg-white text-orange-500 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition-colors">
+              <button 
+                onClick={() => setCurrentView('create-game')}
+                className="bg-white text-orange-500 px-4 py-2 rounded-lg font-medium hover:bg-orange-50 transition-colors"
+              >
                 Gérer le Contenu
               </button>
             </div>
@@ -100,8 +138,8 @@ export default function AdminPage() {
                 <div className="text-sm text-gray-600">Élèves Actifs</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-teal-500">24</div>
-                <div className="text-sm text-gray-600">Exercices Créés</div>
+                <div className="text-2xl font-bold text-teal-500">{poems.length}</div>
+                <div className="text-sm text-gray-600">Jeux Créés</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-500">1,248</div>
@@ -114,6 +152,52 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+
+        {/* Section Liste des Jeux Créés */}
+        {poems.length > 0 && (
+          <div className="bg-white rounded-3xl shadow-lg p-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Jeux Créés ({poems.length})</h3>
+            <div className="space-y-4">
+              {poems.map((poem) => (
+                <div key={poem.id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-800 mb-1">{poem.verse}</p>
+                    <p className="text-sm text-gray-600">
+                      Mot mystère: {poem.targetWord} ({poem.targetWordGender}) • 
+                      {poem.words.length} mots • 
+                      Créé le {new Date(poem.createdAt).toLocaleDateString('fr-CA')}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleTestGame(poem)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
+                    >
+                      Tester
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingPoem(poem)
+                        setCurrentView('create-game')
+                      }}
+                      className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 transition-colors"
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setCurrentView('create-game')}
+                className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+              >
+                ➕ Créer un Nouveau Jeu
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/lib/store'
 import toast from 'react-hot-toast'
 import { Clock } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
 // Types pour le jeu
 interface WordClass {
@@ -19,10 +22,12 @@ interface GameWord {
 }
 
 interface Poem {
-  id: number
-  image: string
+  id: string | number
+  image: string | null
   verse: string
   words: GameWord[]
+  targetWord?: string
+  targetWordGender?: 'masculin' | 'féminin'
 }
 
 interface DroppedLetter {
@@ -42,10 +47,10 @@ const wordClasses: WordClass[] = [
   { name: 'nom commun', color: 'bg-blue-400', letter: 'E' }        // Rêves → Blue → E
 ]
 
-// Données d'exemple
-const samplePoems: Poem[] = [
+// Données par défaut (maintenues pour compatibilité)
+const defaultPoems: Poem[] = [
   {
-    id: 1,
+    id: 'default-1',
     image: '/logo.png',
     verse: 'Demain, l\'hiver viendra poser sa main froide sur nos rêves.',
     words: [
@@ -56,12 +61,18 @@ const samplePoems: Poem[] = [
       { word: 'froide', class: 'adjectif', isSelected: false },       // I
       { word: 'sur', class: 'préposition', isSelected: false },       // R
       { word: 'rêves', class: 'nom commun', isSelected: false }        // E
-    ]
+    ],
+    targetWord: 'HORAIRE',
+    targetWordGender: 'masculin'
   }
 ]
 
 export default function JeuPage() {
   const { user } = useUser()
+  const searchParams = useSearchParams()
+  const poems = useSelector((state: RootState) => state.game.poems)
+  
+  // État du jeu
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedPoem, setSelectedPoem] = useState<Poem | null>(null)
   const [gameWords, setGameWords] = useState<GameWord[]>([])
@@ -75,6 +86,29 @@ export default function JeuPage() {
   const [startTime, setStartTime] = useState<number>(0)
   const [sessionTime, setSessionTime] = useState<number>(0)
   const [gameScore, setGameScore] = useState<number>(0)
+  const [availablePoems, setAvailablePoems] = useState<Poem[]>([])
+
+  // Charger les poèmes disponibles depuis Redux ou paramètres de test
+  useEffect(() => {
+    const testParam = searchParams.get('test')
+    if (testParam === 'true') {
+      try {
+        const testPoemData = sessionStorage.getItem('alphi-test-poem')
+        if (testPoemData) {
+          const testPoem = JSON.parse(testPoemData)
+          setAvailablePoems([testPoem])
+        } else {
+          console.warn('Aucun poème de test trouvé dans sessionStorage')
+          setAvailablePoems(poems.length > 0 ? poems : defaultPoems)
+        }
+      } catch (error) {
+        console.error('Erreur lors du parsing du poème de test:', error)
+        setAvailablePoems(poems.length > 0 ? poems : defaultPoems)
+      }
+    } else {
+      setAvailablePoems(poems.length > 0 ? poems : defaultPoems)
+    }
+  }, [poems, searchParams])
 
   const handlePoemSelection = (poem: Poem) => {
     setSelectedPoem(poem)
@@ -165,7 +199,9 @@ export default function JeuPage() {
 
   const checkWordInStep3 = () => {
     const formedWord = droppedLetters.map(l => l.letter).join('')
-    if (formedWord === 'HORAIRE') {
+    const targetWord = selectedPoem?.targetWord || 'HORAIRE'
+    
+    if (formedWord === targetWord) {
       setFoundWord(formedWord)
       setCurrentStep(4)
     } else {
@@ -179,7 +215,10 @@ export default function JeuPage() {
   const handleGenderSelection = (gender: string) => {
     if (gameOver || selectedGender) return // Empêcher multiples sélections
     setSelectedGender(gender)
-    if (gender === 'féminin') {
+    
+    const correctGender = selectedPoem?.targetWordGender || 'masculin'
+    
+    if (gender !== correctGender) {
       loseLife()
     } else {
       // Jeu terminé avec succès - calculer et enregistrer le score
@@ -325,7 +364,7 @@ export default function JeuPage() {
               Chaque image représente un vers d'un poème. Sélectionnez celle qui vous plaît !
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {samplePoems.map((poem) => (
+              {availablePoems.map((poem) => (
                 <div 
                   key={poem.id}
                   className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 cursor-pointer hover:scale-105 transition-transform duration-200 border-4 border-transparent hover:border-orange-400"
