@@ -122,17 +122,20 @@ export default function JeuPage() {
 
   const handleLetterDrop = (letter: DroppedLetter) => {
     if (droppedLetters.length < 7) {
-      setDroppedLetters([...droppedLetters, letter])
-      setAvailableLetters(availableLetters.filter(l => l.id !== letter.id))
+      // Créer une nouvelle instance de la lettre pour permettre la réutilisation
+      const newLetter: DroppedLetter = {
+        ...letter,
+        id: `dropped-${letter.letter}-${Date.now()}-${Math.random()}`
+      }
+      setDroppedLetters([...droppedLetters, newLetter])
+      // Ne pas retirer la lettre de availableLetters pour permettre la réutilisation
     }
   }
 
   const handleLetterRemove = (letterId: string) => {
-    const letterToRemove = droppedLetters.find(l => l.id === letterId)
-    if (letterToRemove) {
-      setDroppedLetters(droppedLetters.filter(l => l.id !== letterId))
-      setAvailableLetters([...availableLetters, letterToRemove].sort((a, b) => a.letter.localeCompare(b.letter)))
-    }
+    // Simplement retirer la lettre des lettres déposées
+    // Les lettres restent disponibles dans l'alphabet
+    setDroppedLetters(droppedLetters.filter(l => l.id !== letterId))
   }
 
   const checkWordInStep3 = () => {
@@ -141,19 +144,10 @@ export default function JeuPage() {
       setFoundWord(formedWord)
       setCurrentStep(4)
     } else {
+      // Perdre une vie seulement quand l'utilisateur clique sur "Vérifier le mot !"
       loseLife()
-      // Réinitialiser les lettres
+      // Réinitialiser seulement les lettres déposées
       setDroppedLetters([])
-      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-      const coloredAlphabet: DroppedLetter[] = alphabet.map(letter => {
-        const wordClass = wordClasses.find(wc => wc.letter === letter)
-        return {
-          letter,
-          color: wordClass ? wordClass.color : 'bg-gray-300',
-          id: `letter-${letter}-${Math.random()}`
-        }
-      })
-      setAvailableLetters(coloredAlphabet)
     }
   }
 
@@ -379,7 +373,7 @@ export default function JeuPage() {
             {/* Alphabet disponible */}
             <div className="mb-8">
               <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Alphabet :</h3>
-              <div className="grid grid-cols-13 gap-2 max-w-4xl mx-auto">
+              <div className="flex flex-wrap justify-center gap-2 max-w-6xl mx-auto">
                 {availableLetters.map((letter) => (
                   <div
                     key={letter.id}
@@ -387,7 +381,7 @@ export default function JeuPage() {
                     onDragStart={(e) => {
                       e.dataTransfer.setData('letterId', letter.id)
                     }}
-                    className={`w-8 h-8 ${letter.color} rounded-md flex items-center justify-center cursor-pointer text-white font-bold text-sm hover:scale-110 transition-transform ${gameOver ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`w-10 h-10 ${letter.color} rounded-lg flex items-center justify-center cursor-pointer text-white font-bold text-base hover:scale-110 transition-transform ${gameOver ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {letter.letter}
                   </div>
@@ -411,12 +405,11 @@ export default function JeuPage() {
               {droppedLetters.length > 0 && !gameOver && (
                 <button 
                   onClick={() => {
-                    setAvailableLetters([...availableLetters, ...droppedLetters].sort((a, b) => a.letter.localeCompare(b.letter)))
                     setDroppedLetters([])
                   }}
                   className="bg-gray-500 text-white px-6 py-2 rounded-full font-medium hover:bg-gray-600 transition-colors ml-4"
                 >
-                  Recommencer 🔄
+                  Effacer 🗑️
                 </button>
               )}
 
