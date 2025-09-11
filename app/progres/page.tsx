@@ -107,7 +107,7 @@ export default function ProgresPage() {
               {gameHistory.length > 0 && (
                 <button 
                   onClick={clearHistory}
-                  className="bg-red-500 text-white px-4 py-2 rounded-full text-sm hover:bg-red-600 transition-colors"
+                  className="bg-red-500 text-white px-6 py-3 rounded-full text-sm hover:bg-red-600 transition-colors"
                 >
                   🗑️ Effacer
                 </button>
