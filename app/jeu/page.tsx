@@ -63,6 +63,7 @@ export default function JeuPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedPoem, setSelectedPoem] = useState<Poem | null>(null)
   const [gameWords, setGameWords] = useState<GameWord[]>([])
+  const [correctAnswers, setCorrectAnswers] = useState<GameWord[]>([])
   const [foundWord, setFoundWord] = useState('')
   const [selectedGender, setSelectedGender] = useState('')
   const [lives, setLives] = useState(3)
@@ -72,7 +73,11 @@ export default function JeuPage() {
 
   const handlePoemSelection = (poem: Poem) => {
     setSelectedPoem(poem)
-    setGameWords([...poem.words])
+    // Garder les bonnes réponses pour vérification
+    setCorrectAnswers([...poem.words])
+    // Vider les classes pour que l'utilisateur doive deviner
+    const emptyWords = poem.words.map(word => ({ ...word, class: '' }))
+    setGameWords(emptyWords)
     setCurrentStep(2)
   }
 
@@ -113,8 +118,8 @@ export default function JeuPage() {
     updatedWords[wordIndex].class = className
     setGameWords(updatedWords)
     
-    // Vérifier si c'est la bonne réponse (optionnel, pour feedback immédiat)
-    const correctWord = samplePoems[0].words[wordIndex]
+    // Vérifier si c'est la bonne réponse
+    const correctWord = correctAnswers[wordIndex]
     if (className !== '' && className !== correctWord.class && previousClass === '') {
       loseLife()
     }
@@ -163,6 +168,7 @@ export default function JeuPage() {
     setCurrentStep(1)
     setSelectedPoem(null)
     setGameWords([])
+    setCorrectAnswers([])
     setFoundWord('')
     setSelectedGender('')
     setLives(3)
