@@ -204,9 +204,16 @@ export default function JeuPage() {
               <div className="flex items-center space-x-1">
                 <span className="text-sm font-medium text-gray-600 mr-2">Vies:</span>
                 {[...Array(3)].map((_, index) => (
-                  <span key={index} className={`text-xl ${index < lives ? 'text-red-500' : 'text-gray-300'}`}>
-                    ❤️
-                  </span>
+                  <div 
+                    key={index} 
+                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      index < lives 
+                        ? 'bg-red-500 text-white shadow-md' 
+                        : 'bg-gray-300 text-gray-500 opacity-50'
+                    }`}
+                  >
+                    <span className="text-sm font-bold">♥</span>
+                  </div>
                 ))}
               </div>
               {gameOver && (
