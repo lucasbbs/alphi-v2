@@ -7,7 +7,7 @@ export default function Footer() {
         A project by{" "}
         <a
           className="font-semibold text-gray-600 underline-offset-4 transition-colors hover:underline"
-          href="https://twitter.com/steventey"
+          href="https://twitter.com/mainafergie"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -15,7 +15,7 @@ export default function Footer() {
         </a>
       </p>
       <a
-        href="https://www.buymeacoffee.com/steventey"
+        href="https://www.buymeacoffee.com/mainafergie"
         target="_blank"
         rel="noopener noreferrer"
         className="mx-auto mt-2 flex max-w-fit items-center justify-center space-x-2 rounded-lg border border-gray-200 bg-white px-6 py-2 transition-all duration-75 hover:scale-105"
