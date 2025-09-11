@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { useUser } from '@clerk/nextjs'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/lib/store'
+import { deletePoem } from '@/lib/store/gameSlice'
 import GameCreator from '@/components/admin/GameCreator'
 import { Poem } from '@/lib/store/gameSlice'
+import toast from 'react-hot-toast'
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser()
+  const dispatch = useDispatch()
   const poems = useSelector((state: RootState) => state.game.poems)
   const [currentView, setCurrentView] = useState<'dashboard' | 'create-game'>('dashboard')
   const [editingPoem, setEditingPoem] = useState<Poem | null>(null)
@@ -39,8 +42,8 @@ export default function AdminPage() {
   }
 
   const handleTestGame = (poem: Poem) => {
-    // Sauvegarder le poème de test dans sessionStorage pour éviter les limites d'URL
-    sessionStorage.setItem('alphi-test-poem', JSON.stringify(poem))
+    // Sauvegarder le poème de test dans localStorage pour qu'il soit accessible dans le nouvel onglet
+    localStorage.setItem('alphi-test-poem', JSON.stringify(poem))
     // Ouvrir le jeu avec un simple flag de test
     const gameUrl = `/jeu?test=true`
     window.open(gameUrl, '_blank')
@@ -49,6 +52,13 @@ export default function AdminPage() {
   const handleBackToDashboard = () => {
     setCurrentView('dashboard')
     setEditingPoem(null)
+  }
+
+  const handleDeleteGame = (poem: Poem) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le jeu "${poem.verse.substring(0, 50)}..." ?`)) {
+      dispatch(deletePoem(poem.id))
+      toast.success('Jeu supprimé avec succès!')
+    }
   }
 
   if (currentView === 'create-game') {
@@ -183,6 +193,12 @@ export default function AdminPage() {
                       className="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600 transition-colors"
                     >
                       Modifier
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGame(poem)}
+                      className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors"
+                    >
+                      Supprimer
                     </button>
                   </div>
                 </div>

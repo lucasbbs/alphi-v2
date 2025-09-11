@@ -93,12 +93,14 @@ export default function JeuPage() {
     const testParam = searchParams.get('test')
     if (testParam === 'true') {
       try {
-        const testPoemData = sessionStorage.getItem('alphi-test-poem')
+        const testPoemData = localStorage.getItem('alphi-test-poem')
         if (testPoemData) {
           const testPoem = JSON.parse(testPoemData)
           setAvailablePoems([testPoem])
+          // Nettoyer le localStorage après utilisation
+          localStorage.removeItem('alphi-test-poem')
         } else {
-          console.warn('Aucun poème de test trouvé dans sessionStorage')
+          console.warn('Aucun poème de test trouvé dans localStorage')
           setAvailablePoems(poems.length > 0 ? poems : defaultPoems)
         }
       } catch (error) {
@@ -180,7 +182,10 @@ export default function JeuPage() {
   }
 
   const handleLetterDrop = (letter: DroppedLetter) => {
-    if (droppedLetters.length < 7) {
+    const targetWord = selectedPoem?.targetWord || 'HORAIRE'
+    const maxLetters = targetWord.length
+    
+    if (droppedLetters.length < maxLetters) {
       // Créer une nouvelle instance de la lettre pour permettre la réutilisation
       const newLetter: DroppedLetter = {
         ...letter,
@@ -555,7 +560,7 @@ export default function JeuPage() {
             <div className="text-center space-y-4">
               <button 
                 onClick={checkWordInStep3}
-                disabled={droppedLetters.length !== 7 || gameOver}
+                disabled={droppedLetters.length !== (selectedPoem?.targetWord || 'HORAIRE').length || gameOver}
                 className="bg-teal-500 text-white px-8 py-3 rounded-full font-semibold hover:bg-teal-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 Vérifier le Mot ! ✨
