@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import Navbar from "@/components/layout/navbar";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from "react-hot-toast";
 
 export const metadata = {
   title: "Precedent - Building blocks for your Next.js project",
@@ -31,6 +32,19 @@ export default async function RootLayout({
             {children}
           </main>
           <Footer />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#333',
+                color: '#fff',
+                fontSize: '16px',
+                borderRadius: '10px',
+                padding: '12px 16px'
+              }
+            }}
+          />
           <VercelAnalytics />
         </body>
       </html>

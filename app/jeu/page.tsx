@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
+import toast from 'react-hot-toast'
+import { Clock } from 'lucide-react'
 
 // Types pour le jeu
 interface WordClass {
@@ -70,6 +72,9 @@ export default function JeuPage() {
   const [droppedLetters, setDroppedLetters] = useState<DroppedLetter[]>([])
   const [availableLetters, setAvailableLetters] = useState<DroppedLetter[]>([])
   const [gameOver, setGameOver] = useState(false)
+  const [startTime, setStartTime] = useState<number>(0)
+  const [sessionTime, setSessionTime] = useState<number>(0)
+  const [gameScore, setGameScore] = useState<number>(0)
 
   const handlePoemSelection = (poem: Poem) => {
     setSelectedPoem(poem)
@@ -79,6 +84,11 @@ export default function JeuPage() {
     const emptyWords = poem.words.map(word => ({ ...word, class: '' }))
     setGameWords(emptyWords)
     setCurrentStep(2)
+    
+    // Démarrer le timer si ce n'est pas déjà fait
+    if (startTime === 0) {
+      setStartTime(Date.now())
+    }
   }
 
   const handleWordClassAssignment = (wordIndex: number, className: string) => {
@@ -107,8 +117,18 @@ export default function JeuPage() {
     if (gameOver) return // Ne pas perdre de vie si le jeu est déjà terminé
     const newLives = Math.max(0, lives - 1) // Empêcher les vies négatives
     setLives(newLives)
+    
+    // Notification toast pour perte de vie
+    toast.error(`❤️ Vie perdue ! ${newLives} vies restantes`, {
+      icon: '💔',
+      duration: 2000
+    })
+    
     if (newLives <= 0) {
       setGameOver(true)
+      toast.error('💀 Jeu terminé ! Plus de vies restantes', {
+        duration: 4000
+      })
     }
   }
 
@@ -161,7 +181,50 @@ export default function JeuPage() {
     setSelectedGender(gender)
     if (gender === 'féminin') {
       loseLife()
+    } else {
+      // Jeu terminé avec succès - calculer et enregistrer le score
+      const finalScore = calculateScore()
+      setGameScore(finalScore)
+      setGameOver(true) // Arrêter le timer
+      toast.success(`🎉 Félicitations ! Score: ${finalScore} points`, {
+        duration: 4000
+      })
+      
+      // Enregistrer dans localStorage pour la page Mes Progrès
+      const gameData = {
+        date: new Date().toISOString(),
+        score: finalScore,
+        lives: lives,
+        time: sessionTime,
+        verse: selectedPoem?.verse || ''
+      }
+      
+      const savedGames = JSON.parse(localStorage.getItem('alphi-games') || '[]')
+      savedGames.push(gameData)
+      localStorage.setItem('alphi-games', JSON.stringify(savedGames))
     }
+  }
+
+  // Timer useEffect
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (startTime > 0 && !gameOver) {
+      interval = setInterval(() => {
+        setSessionTime(Math.floor((Date.now() - startTime) / 1000))
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [startTime, gameOver])
+
+  // Calcul du score basé sur vies restantes et temps
+  const calculateScore = () => {
+    if (sessionTime === 0) return 0
+    
+    const baseScore = 1000
+    const livesBonus = lives * 200 // Bonus pour vies restantes
+    const timeBonus = Math.max(0, 300 - sessionTime) // Bonus pour rapidité (max 5 min)
+    
+    return baseScore + livesBonus + timeBonus
   }
 
   const resetGame = () => {
@@ -175,6 +238,17 @@ export default function JeuPage() {
     setDroppedLetters([])
     setAvailableLetters([])
     setGameOver(false)
+    setStartTime(0)
+    setSessionTime(0)
+    setGameScore(0)
+  }
+
+  const startNewGame = () => {
+    resetGame()
+    setStartTime(Date.now())
+    toast.success('🎮 Nouveau jeu commencé !', {
+      duration: 2000
+    })
   }
 
   if (!user) {
@@ -207,6 +281,16 @@ export default function JeuPage() {
                 ></div>
               </div>
               {/* Affichage des vies */}
+              {/* Timer avec icône horloge */}
+              {startTime > 0 && (
+                <div className="flex items-center space-x-2 mb-3 bg-blue-50 px-3 py-2 rounded-full">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-600">
+                    {Math.floor(sessionTime / 60)}:{(sessionTime % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              )}
+              
               <div className="flex items-center space-x-1">
                 <span className="text-sm font-medium text-gray-600 mr-2">Vies:</span>
                 {[...Array(3)].map((_, index) => (
@@ -325,10 +409,10 @@ export default function JeuPage() {
               {gameOver && (
                 <div className="mt-4">
                   <button 
-                    onClick={resetGame}
+                    onClick={startNewGame}
                     className="bg-red-500 text-white px-8 py-3 rounded-full font-semibold hover:bg-red-600 transition-colors"
                   >
-                    Recommencer le Jeu 🔄
+                    Nouveau Jeu 🔄
                   </button>
                 </div>
               )}
@@ -346,6 +430,29 @@ export default function JeuPage() {
               Glissez et déposez les lettres colorées dans le bon ordre pour former le mot mystère. 
               L'ordre suit celui des mots dans la phrase !
             </p>
+            
+            {/* Affichage du vers avec couleurs correspondantes */}
+            {selectedPoem && (
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 mb-8">
+                <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Votre sélection :</h3>
+                <div className="text-center text-lg flex flex-wrap justify-center gap-2">
+                  {gameWords.map((wordData, index) => {
+                    const wordClass = wordClasses.find(wc => wc.name === wordData.class)
+                    return (
+                      <span 
+                        key={index}
+                        className={`px-3 py-1 rounded-full text-white font-medium ${wordClass ? wordClass.color : 'bg-gray-400'}`}
+                      >
+                        {wordData.word}
+                      </span>
+                    )
+                  })}
+                </div>
+                <p className="text-center text-sm text-gray-600 mt-3">
+                  Chaque couleur correspond à une classe grammaticale de vos réponses précédentes
+                </p>
+              </div>
+            )}
 
             {/* Zone de dépôt pour le mot */}
             <div className="bg-gradient-to-r from-orange-100 to-pink-100 rounded-2xl p-6 mb-8">
