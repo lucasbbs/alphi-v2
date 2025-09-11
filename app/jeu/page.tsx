@@ -19,6 +19,14 @@ interface GameWord {
   word: string
   class: string
   isSelected: boolean
+  groupId?: string
+}
+
+interface WordGroup {
+  id: string
+  name: string
+  color: string
+  wordIndices: number[]
 }
 
 interface Poem {
@@ -26,6 +34,7 @@ interface Poem {
   image: string | null
   verse: string
   words: GameWord[]
+  wordGroups: WordGroup[]
   targetWord?: string
   targetWordGender?: 'masculin' | 'féminin'
 }
@@ -34,6 +43,7 @@ interface DroppedLetter {
   letter: string
   color: string
   id: string
+  customStyle?: { backgroundColor: string }
 }
 
 // Classes de mots avec leurs couleurs et lettres selon le tableau fourni
@@ -56,11 +66,20 @@ const defaultPoems: Poem[] = [
     words: [
       { word: 'Demain', class: 'adverbe', isSelected: false },        // H
       { word: 'l\'', class: 'déterminant défini', isSelected: false }, // O
-      { word: 'viendra', class: 'verbe', isSelected: false },         // R
+      { word: 'viendra', class: 'verbe', isSelected: false, groupId: 'verbe-groupe-1' },         // R
+      { word: 'poser', class: 'verbe', isSelected: false, groupId: 'verbe-groupe-1' },
       { word: 'sa', class: 'déterminant possessif', isSelected: false }, // A
       { word: 'froide', class: 'adjectif', isSelected: false },       // I
       { word: 'sur', class: 'préposition', isSelected: false },       // R
       { word: 'rêves', class: 'nom commun', isSelected: false }        // E
+    ],
+    wordGroups: [
+      {
+        id: 'verbe-groupe-1',
+        name: 'Groupe verbal',
+        color: '#10B981',
+        wordIndices: [2, 3]
+      }
     ],
     targetWord: 'HORAIRE',
     targetWordGender: 'masculin'
@@ -133,15 +152,65 @@ export default function JeuPage() {
     setGameWords(updatedWords)
   }
 
+  const getWordColorAndLetter = (word: GameWord, wordIndex: number) => {
+    if (!selectedPoem) return null
+
+    // If word is part of a group, use group color
+    if (word.groupId) {
+      const group = selectedPoem.wordGroups?.find(g => g.id === word.groupId)
+      if (group) {
+        // For groups, we need to determine what letter to use
+        // We'll use the traditional class mapping for the letter, but the group color
+        const wordClass = wordClasses.find(wc => wc.name === word.class)
+        return {
+          color: group.color,
+          letter: wordClass ? wordClass.letter : 'X'
+        }
+      }
+    }
+    
+    // Otherwise use traditional class-based color and letter
+    const wordClass = wordClasses.find(wc => wc.name === word.class)
+    return wordClass ? {
+      color: wordClass.color,
+      letter: wordClass.letter
+    } : { color: 'bg-gray-300', letter: 'X' }
+  }
+
   const proceedToStep3 = () => {
-    // Générer l'alphabet avec les couleurs correspondantes
+    if (!selectedPoem) return
+
+    // Create a mapping of letters to colors based on the current poem's words and groups
+    // Priority: custom hex colors > class colors
+    const letterColorMap = new Map<string, string>()
+    
+    selectedPoem.words.forEach((word, index) => {
+      const colorInfo = getWordColorAndLetter(word, index)
+      if (colorInfo) {
+        const existingColor = letterColorMap.get(colorInfo.letter)
+        
+        // Only overwrite if:
+        // 1. No existing color, OR
+        // 2. New color is hex and existing is not hex, OR  
+        // 3. Both are hex (later overwrites)
+        // This prioritizes custom colors over class colors
+        if (!existingColor || 
+            (colorInfo.color.startsWith('#') && !existingColor.startsWith('#')) ||
+            (colorInfo.color.startsWith('#') && existingColor.startsWith('#'))) {
+          letterColorMap.set(colorInfo.letter, colorInfo.color)
+        }
+      }
+    })
+
+    // Generate alphabet with the correct colors
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
     const coloredAlphabet: DroppedLetter[] = alphabet.map(letter => {
-      const wordClass = wordClasses.find(wc => wc.letter === letter)
+      const color = letterColorMap.get(letter) || 'bg-gray-300'
       return {
         letter,
-        color: wordClass ? wordClass.color : 'bg-gray-300',
-        id: `letter-${letter}-${Math.random()}`
+        color: color.startsWith('#') ? '' : color, // Use CSS class for non-hex colors
+        id: `letter-${letter}-${Math.random()}`,
+        customStyle: color.startsWith('#') ? { backgroundColor: color } : undefined
       }
     })
     setAvailableLetters(coloredAlphabet)
@@ -481,11 +550,15 @@ export default function JeuPage() {
                 <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Votre sélection :</h3>
                 <div className="text-center text-lg flex flex-wrap justify-center gap-2">
                   {gameWords.map((wordData, index) => {
-                    const wordClass = wordClasses.find(wc => wc.name === wordData.class)
+                    const colorInfo = getWordColorAndLetter(wordData, index)
                     return (
                       <span 
                         key={index}
-                        className={`px-3 py-1 rounded-full text-white font-medium ${wordClass ? wordClass.color : 'bg-gray-400'}`}
+                        className={`px-3 py-1 rounded-full text-white font-medium ${
+                          colorInfo && !colorInfo.color.startsWith('#') ? colorInfo.color : 'bg-gray-400'
+                        }`}
+                        style={colorInfo && colorInfo.color.startsWith('#') ? 
+                          { backgroundColor: colorInfo.color } : undefined}
                       >
                         {wordData.word}
                       </span>
@@ -493,7 +566,7 @@ export default function JeuPage() {
                   })}
                 </div>
                 <p className="text-center text-sm text-gray-600 mt-3">
-                  Chaque couleur correspond à une classe grammaticale de vos réponses précédentes
+                  Chaque couleur correspond à une classe grammaticale ou un groupe de mots de vos réponses précédentes
                 </p>
               </div>
             )}
@@ -501,8 +574,8 @@ export default function JeuPage() {
             {/* Zone de dépôt pour le mot */}
             <div className="bg-gradient-to-r from-orange-100 to-pink-100 rounded-2xl p-6 mb-8">
               <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Mot mystère :</h3>
-              <div className="flex justify-center items-center space-x-2 mb-4 min-h-[80px]">
-                {Array.from({ length: 7 }).map((_, index) => (
+              <div className="flex justify-center items-center space-x-2 mb-4 min-h-[80px] overflow-x-auto">
+                {Array.from({ length: (selectedPoem?.targetWord || 'HORAIRE').length }).map((_, index) => (
                   <div 
                     key={index}
                     className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white"
@@ -518,7 +591,8 @@ export default function JeuPage() {
                   >
                     {droppedLetters[index] ? (
                       <div 
-                        className={`w-12 h-12 ${droppedLetters[index].color} rounded-lg flex items-center justify-center cursor-pointer text-white font-bold text-xl`}
+                        className={`w-12 h-12 ${droppedLetters[index].color || 'bg-gray-400'} rounded-lg flex items-center justify-center cursor-pointer text-white font-bold text-xl`}
+                        style={droppedLetters[index].customStyle}
                         onClick={() => handleLetterRemove(droppedLetters[index].id)}
                       >
                         {droppedLetters[index].letter}
@@ -545,7 +619,8 @@ export default function JeuPage() {
                     onDragStart={(e) => {
                       e.dataTransfer.setData('letterId', letter.id)
                     }}
-                    className={`w-10 h-10 ${letter.color} rounded-lg flex items-center justify-center cursor-pointer text-white font-bold text-base hover:scale-110 transition-transform ${gameOver ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`w-10 h-10 ${letter.color || 'bg-gray-400'} rounded-lg flex items-center justify-center cursor-pointer text-white font-bold text-base hover:scale-110 transition-transform ${gameOver ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    style={letter.customStyle}
                   >
                     {letter.letter}
                   </div>

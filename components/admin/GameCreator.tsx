@@ -21,6 +21,7 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
     image: editingPoem?.image || null,
     verse: editingPoem?.verse || '',
     words: editingPoem?.words || [],
+    wordGroups: editingPoem?.wordGroups || [],
     targetWord: editingPoem?.targetWord || '',
     targetWordGender: editingPoem?.targetWordGender || 'masculin' as 'masculin' | 'féminin'
   })
@@ -52,6 +53,7 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
       image: formData.image,
       verse: formData.verse,
       words: formData.words,
+      wordGroups: formData.wordGroups,
       targetWord: formData.targetWord.toUpperCase(),
       targetWordGender: formData.targetWordGender,
       createdAt: editingPoem?.createdAt || new Date().toISOString()
@@ -75,6 +77,7 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
       image: formData.image,
       verse: formData.verse,
       words: formData.words,
+      wordGroups: formData.wordGroups,
       targetWord: formData.targetWord.toUpperCase(),
       targetWordGender: formData.targetWordGender,
       createdAt: editingPoem?.createdAt || new Date().toISOString()
@@ -132,8 +135,10 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
         <VerseEditor
           verse={formData.verse}
           words={formData.words}
+          wordGroups={formData.wordGroups}
           onVerseChange={(verse) => setFormData(prev => ({ ...prev, verse }))}
           onWordsChange={(words) => setFormData(prev => ({ ...prev, words }))}
+          onWordGroupsChange={(wordGroups) => setFormData(prev => ({ ...prev, wordGroups }))}
         />
 
         {/* 3. Target Word Input */}

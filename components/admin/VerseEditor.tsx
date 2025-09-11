@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { GameWord } from '@/lib/store/gameSlice'
+import { GameWord, WordGroup } from '@/lib/store/gameSlice'
+import ColorPicker from './ColorPicker'
 
 const wordClasses = [
   { name: 'adverbe', color: 'bg-orange-400' },
@@ -19,12 +20,18 @@ const wordClasses = [
 interface VerseEditorProps {
   verse: string
   words: GameWord[]
+  wordGroups: WordGroup[]
   onVerseChange: (verse: string) => void
   onWordsChange: (words: GameWord[]) => void
+  onWordGroupsChange: (groups: WordGroup[]) => void
 }
 
-export default function VerseEditor({ verse, words, onVerseChange, onWordsChange }: VerseEditorProps) {
+export default function VerseEditor({ verse, words, wordGroups, onVerseChange, onWordsChange, onWordGroupsChange }: VerseEditorProps) {
   const [parsedWords, setParsedWords] = useState<GameWord[]>([])
+  const [selectedWordIndices, setSelectedWordIndices] = useState<number[]>([])
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false)
+  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupColor, setNewGroupColor] = useState('#EF4444')
 
   // Fonction d'attribution automatique des classes grammaticales
   const autoClassifyWord = (word: string): string => {
@@ -106,9 +113,70 @@ export default function VerseEditor({ verse, words, onVerseChange, onWordsChange
     onWordsChange(updatedWords)
   }
 
-  const getWordColor = (className: string) => {
-    const wordClass = wordClasses.find(wc => wc.name === className)
-    return wordClass ? wordClass.color : 'bg-gray-200'
+  const handleWordSelection = (wordIndex: number) => {
+    setSelectedWordIndices(prev => 
+      prev.includes(wordIndex) 
+        ? prev.filter(i => i !== wordIndex)
+        : [...prev, wordIndex].sort((a, b) => a - b)
+    )
+  }
+
+  const createWordGroup = () => {
+    if (selectedWordIndices.length === 0 || !newGroupName.trim()) return
+    
+    const newGroup: WordGroup = {
+      id: `group-${Date.now()}`,
+      name: newGroupName,
+      color: newGroupColor,
+      wordIndices: selectedWordIndices
+    }
+
+    // Update words to include group ID
+    const updatedWords = [...parsedWords]
+    selectedWordIndices.forEach(index => {
+      updatedWords[index] = { ...updatedWords[index], groupId: newGroup.id }
+    })
+
+    // Update groups
+    const updatedGroups = [...wordGroups, newGroup]
+
+    setParsedWords(updatedWords)
+    onWordsChange(updatedWords)
+    onWordGroupsChange(updatedGroups)
+
+    // Reset selection and form
+    setSelectedWordIndices([])
+    setNewGroupName('')
+    setNewGroupColor('#EF4444')
+    setIsCreatingGroup(false)
+  }
+
+  const removeWordGroup = (groupId: string) => {
+    // Remove group from words
+    const updatedWords = parsedWords.map(word => 
+      word.groupId === groupId ? { ...word, groupId: undefined } : word
+    )
+    
+    // Remove group from groups array
+    const updatedGroups = wordGroups.filter(group => group.id !== groupId)
+
+    setParsedWords(updatedWords)
+    onWordsChange(updatedWords)
+    onWordGroupsChange(updatedGroups)
+  }
+
+  const getWordColor = (word: GameWord, index: number) => {
+    // If word is part of a group, use group color
+    if (word.groupId) {
+      const group = wordGroups.find(g => g.id === word.groupId)
+      if (group) {
+        return { backgroundColor: group.color }
+      }
+    }
+    
+    // Otherwise use traditional class-based color
+    const wordClass = wordClasses.find(wc => wc.name === word.class)
+    return wordClass ? { className: wordClass.color } : { className: 'bg-gray-200' }
   }
 
   return (
@@ -138,16 +206,126 @@ export default function VerseEditor({ verse, words, onVerseChange, onWordsChange
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Prévisualisation :</h4>
             <div className="flex flex-wrap gap-2">
-              {parsedWords.map((word, index) => (
-                <span 
-                  key={index}
-                  className={`px-2 py-1 rounded text-white text-sm font-medium ${getWordColor(word.class)}`}
-                >
-                  {word.word}
-                </span>
-              ))}
+              {parsedWords.map((word, index) => {
+                const colorStyle = getWordColor(word, index)
+                return (
+                  <span 
+                    key={index}
+                    className={`px-2 py-1 rounded text-white text-sm font-medium ${
+                      colorStyle.className || ''
+                    } ${selectedWordIndices.includes(index) ? 'ring-2 ring-blue-500' : ''}`}
+                    style={colorStyle.backgroundColor ? { backgroundColor: colorStyle.backgroundColor } : undefined}
+                    onClick={() => handleWordSelection(index)}
+                  >
+                    {word.word}
+                    {word.groupId && (
+                      <span className="ml-1 text-xs">👥</span>
+                    )}
+                  </span>
+                )
+              })}
             </div>
+            {selectedWordIndices.length > 0 && (
+              <div className="mt-4 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                <p className="text-sm text-blue-700">
+                  {selectedWordIndices.length} mot(s) sélectionné(s): {selectedWordIndices.map(i => parsedWords[i].word).join(', ')}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingGroup(true)}
+                    className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                  >
+                    Créer un Groupe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWordIndices([])}
+                    className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                  >
+                    Désélectionner
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Word Groups Management */}
+          {wordGroups.length > 0 && (
+            <div className="bg-green-50 rounded-lg p-4 mb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Groupes de mots :</h4>
+              <div className="space-y-2">
+                {wordGroups.map((group) => (
+                  <div key={group.id} className="flex items-center justify-between bg-white p-2 rounded border">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: group.color }}
+                      />
+                      <span className="text-sm font-medium">{group.name}</span>
+                      <span className="text-xs text-gray-500">
+                        ({group.wordIndices.map(i => parsedWords[i]?.word).join(', ')})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeWordGroup(group.id)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Create Group Modal */}
+          {isCreatingGroup && (
+            <div className="bg-yellow-50 rounded-lg p-4 mb-4 border-l-4 border-yellow-400">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Créer un nouveau groupe</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Nom du groupe
+                  </label>
+                  <input
+                    type="text"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="ex: Groupe verbal, Complément..."
+                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+                <ColorPicker
+                  selectedColor={newGroupColor}
+                  onColorChange={setNewGroupColor}
+                  label="Couleur du groupe"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={createWordGroup}
+                    disabled={!newGroupName.trim()}
+                    className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 disabled:bg-gray-300"
+                  >
+                    Créer le Groupe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingGroup(false)
+                      setNewGroupName('')
+                      setNewGroupColor('#EF4444')
+                    }}
+                    className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3">
             {parsedWords.map((word, index) => (
@@ -170,7 +348,10 @@ export default function VerseEditor({ verse, words, onVerseChange, onWordsChange
                   ))}
                 </select>
                 {word.class && (
-                  <div className={`w-6 h-6 rounded ${getWordColor(word.class)}`} />
+                  <div 
+                    className={`w-6 h-6 rounded ${getWordColor(word, index).className || ''}`}
+                    style={getWordColor(word, index).backgroundColor ? { backgroundColor: getWordColor(word, index).backgroundColor } : undefined}
+                  />
                 )}
               </div>
             ))}
