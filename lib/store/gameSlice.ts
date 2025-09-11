@@ -1,9 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
+export interface WordGroup {
+  id: string
+  name: string
+  color: string
+  wordIndices: number[]
+}
+
 export interface GameWord {
   word: string
   class: string
   isSelected: boolean
+  groupId?: string
 }
 
 export interface Poem {
@@ -11,6 +19,7 @@ export interface Poem {
   image: string | null
   verse: string
   words: GameWord[]
+  wordGroups: WordGroup[]
   targetWord: string
   targetWordGender: 'masculin' | 'féminin'
   createdAt: string
@@ -43,11 +52,20 @@ const loadPersistedPoems = (): Poem[] => {
       words: [
         { word: 'Demain', class: 'adverbe', isSelected: false },
         { word: 'l\'', class: 'déterminant défini', isSelected: false },
-        { word: 'viendra', class: 'verbe', isSelected: false },
+        { word: 'viendra', class: 'verbe', isSelected: false, groupId: 'verbe-groupe-1' },
+        { word: 'poser', class: 'verbe', isSelected: false, groupId: 'verbe-groupe-1' },
         { word: 'sa', class: 'déterminant possessif', isSelected: false },
         { word: 'froide', class: 'adjectif', isSelected: false },
         { word: 'sur', class: 'préposition', isSelected: false },
         { word: 'rêves', class: 'nom commun', isSelected: false }
+      ],
+      wordGroups: [
+        {
+          id: 'verbe-groupe-1',
+          name: 'Groupe verbal',
+          color: '#10B981',
+          wordIndices: [2, 3]
+        }
       ],
       targetWord: 'HORAIRE',
       targetWordGender: 'masculin',
