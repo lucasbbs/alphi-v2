@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { addPoem, updatePoem, type Poem } from '@/lib/store/gameSlice'
+import { useSession } from '@clerk/nextjs'
+import { createPoem, updatePoem, type Poem } from '@/lib/store/gameSlice'
+import { AppDispatch } from '@/lib/store'
 import ImageDropzone from './ImageDropzone'
 import VerseEditor from './VerseEditor'
 import { Save, Play, ArrowLeft } from 'lucide-react'
@@ -15,7 +17,8 @@ interface GameCreatorProps {
 }
 
 export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameCreatorProps) {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch<AppDispatch>()
+  const { session } = useSession()
   
   const [formData, setFormData] = useState({
     image: editingPoem?.image || null,
@@ -28,7 +31,13 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
     wordColors: editingPoem?.wordColors || {}
   })
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Check if user is authenticated
+    if (!session) {
+      toast.error('Vous devez être connecté pour sauvegarder')
+      return
+    }
+
     // Validation
     if (!formData.verse.trim()) {
       toast.error('Veuillez saisir un vers')
@@ -57,29 +66,41 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
       return
     }
 
-    const poem: Poem = {
-      id: editingPoem?.id || `poem-${Date.now()}`,
-      image: formData.image,
-      verse: formData.verse,
-      words: formData.words,
-      wordGroups: formData.wordGroups,
-      targetWord: formData.targetWord.toUpperCase(),
-      targetWordGender: formData.targetWordGender,
-      createdAt: editingPoem?.createdAt || new Date().toISOString(),
-      gameParticipatingWords: formData.gameParticipatingWords,
-      wordColors: formData.wordColors
-    }
+    try {
+      // Get Supabase session token
+      const sessionToken = await session.getToken({ template: 'supabase' })
+      if (!sessionToken) {
+        toast.error('Erreur d\'authentification')
+        return
+      }
 
-    if (editingPoem) {
-      dispatch(updatePoem(poem))
-      toast.success('Jeu mis à jour avec succès!')
-    } else {
-      dispatch(addPoem(poem))
-      toast.success('Nouveau jeu créé avec succès!')
-    }
+      const poem: Poem = {
+        id: editingPoem?.id || `poem-${Date.now()}`,
+        image: formData.image,
+        verse: formData.verse,
+        words: formData.words,
+        wordGroups: formData.wordGroups,
+        targetWord: formData.targetWord.toUpperCase(),
+        targetWordGender: formData.targetWordGender,
+        createdAt: editingPoem?.createdAt || new Date().toISOString(),
+        gameParticipatingWords: formData.gameParticipatingWords,
+        wordColors: formData.wordColors
+      }
 
-    // Optionally close the form
-    onCancel()
+      if (editingPoem) {
+        await dispatch(updatePoem({ sessionToken, poem })).unwrap()
+        toast.success('Jeu mis à jour avec succès!')
+      } else {
+        await dispatch(createPoem({ sessionToken, poem })).unwrap()
+        toast.success('Nouveau jeu créé avec succès!')
+      }
+
+      // Optionally close the form
+      onCancel()
+    } catch (error) {
+      console.error('Error saving poem:', error)
+      toast.error('Erreur lors de la sauvegarde')
+    }
   }
 
   const handleTest = () => {

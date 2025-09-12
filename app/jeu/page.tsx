@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
-import { useSelector } from "react-redux";
-import { RootState } from "@/lib/store";
+import { useUser, useSession } from "@clerk/nextjs";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "@/lib/store";
+import { fetchPoems } from "@/lib/store/gameSlice";
+import { ProgressService } from "@/lib/supabase/services/progressService";
 import toast from "react-hot-toast";
 import { Clock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -103,8 +105,10 @@ const defaultPoems: Poem[] = [
 
 export default function JeuPage() {
   const { user } = useUser();
+  const { session } = useSession();
+  const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
-  const poems = useSelector((state: RootState) => state.game.poems);
+  const { poems, loading } = useSelector((state: RootState) => state.game);
 
   // État du jeu
   const [currentStep, setCurrentStep] = useState(1);
@@ -121,6 +125,25 @@ export default function JeuPage() {
   const [sessionTime, setSessionTime] = useState<number>(0);
   const [gameScore, setGameScore] = useState<number>(0);
   const [availablePoems, setAvailablePoems] = useState<Poem[]>([]);
+
+  // Fetch poems from Supabase on component mount
+  useEffect(() => {
+    const loadPoems = async () => {
+      if (session && user) {
+        try {
+          const sessionToken = await session.getToken({ template: 'supabase' });
+          if (sessionToken) {
+            dispatch(fetchPoems(sessionToken));
+          }
+        } catch (error) {
+          console.error('Error fetching poems:', error);
+          toast.error('Erreur lors du chargement des poèmes');
+        }
+      }
+    };
+
+    loadPoems();
+  }, [session, user, dispatch]);
 
   // Charger les poèmes disponibles depuis Redux ou paramètres de test
   useEffect(() => {
@@ -378,20 +401,8 @@ export default function JeuPage() {
         duration: 4000,
       });
 
-      // Enregistrer dans localStorage pour la page Mes Progrès
-      const gameData = {
-        date: new Date().toISOString(),
-        score: finalScore,
-        lives: lives,
-        time: sessionTime,
-        verse: selectedPoem?.verse || "",
-      };
-
-      const savedGames = JSON.parse(
-        localStorage.getItem("alphi-games") || "[]",
-      );
-      savedGames.push(gameData);
-      localStorage.setItem("alphi-games", JSON.stringify(savedGames));
+      // Sauvegarder le progrès dans Supabase
+      saveGameProgress(finalScore);
     }
   };
 
@@ -415,6 +426,43 @@ export default function JeuPage() {
     const timeBonus = Math.max(0, 300 - sessionTime); // Bonus pour rapidité (max 5 min)
 
     return baseScore + livesBonus + timeBonus;
+  };
+
+  const saveGameProgress = async (finalScore: number) => {
+    if (!session || !selectedPoem) return;
+
+    try {
+      const sessionToken = await session.getToken({ template: 'supabase' });
+      if (!sessionToken) {
+        console.error('No session token available');
+        return;
+      }
+
+      await ProgressService.saveGameProgress(
+        sessionToken,
+        selectedPoem.id.toString(),
+        sessionTime,
+        finalScore
+      );
+
+      console.log('Game progress saved successfully');
+    } catch (error) {
+      console.error('Failed to save game progress:', error);
+      // Fallback to localStorage if Supabase fails
+      const gameData = {
+        date: new Date().toISOString(),
+        score: finalScore,
+        lives: lives,
+        time: sessionTime,
+        verse: selectedPoem?.verse || "",
+      };
+
+      const savedGames = JSON.parse(
+        localStorage.getItem("alphi-games") || "[]",
+      );
+      savedGames.push(gameData);
+      localStorage.setItem("alphi-games", JSON.stringify(savedGames));
+    }
   };
 
   const resetGame = () => {
