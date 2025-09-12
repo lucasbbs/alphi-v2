@@ -17,10 +17,10 @@ export function transformSupabasePoem(supabasePoem: SupabasePoem): LocalPoem {
     id: supabasePoem.id,
     image: null, // Images handled separately for now
     verse: supabasePoem.content,
-    words: [], // Will be populated from verses parsing
+    words: supabasePoem.words || [], // Get words from Supabase
     wordGroups: localWordGroups,
     targetWord: supabasePoem.target_word,
-    targetWordGender: 'masculin', // Default, can be extended
+    targetWordGender: (supabasePoem.target_word_gender as 'masculin' | 'féminin') || 'masculin',
     createdAt: supabasePoem.created_at,
     gameParticipatingWords: supabasePoem.game_participating_words || [],
     wordColors: supabasePoem.word_colors ? JSON.parse(JSON.stringify(supabasePoem.word_colors)) : {}
@@ -41,7 +41,9 @@ export function transformLocalPoem(localPoem: LocalPoem): Partial<SupabasePoem> 
     title: `Poem ${localPoem.id}`,
     content: localPoem.verse,
     verses: [localPoem.verse],
+    words: localPoem.words, // Store words in Supabase
     target_word: localPoem.targetWord,
+    target_word_gender: localPoem.targetWordGender,
     game_participating_words: localPoem.gameParticipatingWords || [],
     word_groups: supabaseWordGroups as any,
     word_colors: localPoem.wordColors || {},
