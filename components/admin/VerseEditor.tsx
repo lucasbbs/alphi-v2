@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { GameWord, WordGroup } from "@/lib/store/gameSlice";
 import ColorPicker from "./ColorPicker";
+import Popover from "@/components/shared/popover";
 
 const wordClasses = [
   { name: "adverbe", color: "bg-orange-400" },
@@ -39,6 +40,9 @@ export default function VerseEditor({
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupColor, setNewGroupColor] = useState("#EF4444");
+  const [gameParticipatingWords, setGameParticipatingWords] = useState<number[]>([]);
+  const [wordColors, setWordColors] = useState<{[key: number]: string}>({});
+  const [openPopovers, setOpenPopovers] = useState<{[key: number]: boolean}>({});
 
   // Fonction d'attribution automatique des classes grammaticales
   const autoClassifyWord = (word: string): string => {
@@ -316,19 +320,44 @@ export default function VerseEditor({
   };
 
   const getWordColor = (word: GameWord, index: number) => {
-    // If word is part of a group, use group color
-    if (word.groupId) {
-      const group = wordGroups.find((g) => g.id === word.groupId);
-      if (group) {
-        return { backgroundColor: group.color };
-      }
+    // If word is not participating in the game, show light gray
+    if (!gameParticipatingWords.includes(index)) {
+      return { className: "bg-gray-300" };
     }
 
-    // Otherwise use traditional class-based color
-    const wordClass = wordClasses.find((wc) => wc.name === word.class);
-    return wordClass
-      ? { className: wordClass.color }
-      : { className: "bg-gray-200" };
+    // For participating words: show custom color if set, otherwise light gray
+    if (wordColors[index]) {
+      return { backgroundColor: wordColors[index] };
+    }
+
+    // Default light gray for participating words without custom color
+    return { className: "bg-gray-300" };
+  };
+
+  const handleWordParticipationToggle = (index: number) => {
+    setGameParticipatingWords(prev => {
+      if (prev.includes(index)) {
+        // Remove from game and clear custom color
+        setWordColors(prevColors => {
+          const newColors = { ...prevColors };
+          delete newColors[index];
+          return newColors;
+        });
+        return prev.filter(i => i !== index);
+      } else {
+        // Add to game with default light gray color
+        setWordColors(prevColors => ({ ...prevColors, [index]: "#D1D5DB" }));
+        return [...prev, index];
+      }
+    });
+  };
+
+  const handleWordColorChange = (index: number, color: string) => {
+    setWordColors(prev => ({ ...prev, [index]: color }));
+  };
+
+  const togglePopover = (index: number, open: boolean) => {
+    setOpenPopovers(prev => ({ ...prev, [index]: open }));
   };
 
   return (
@@ -360,29 +389,80 @@ export default function VerseEditor({
             <h4 className="mb-2 text-sm font-medium text-gray-700">
               Prévisualisation :
             </h4>
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {parsedWords.map((word, index) => {
                 const colorStyle = getWordColor(word, index);
+                const isParticipating = gameParticipatingWords.includes(index);
                 return (
-                  <span
-                    key={index}
-                    className={`rounded px-2 py-1 text-sm font-medium text-white ${
-                      colorStyle.className || ""
-                    } ${
-                      selectedWordIndices.includes(index)
-                        ? "ring-2 ring-blue-500"
-                        : ""
-                    }`}
-                    style={
-                      colorStyle.backgroundColor
-                        ? { backgroundColor: colorStyle.backgroundColor }
-                        : undefined
-                    }
-                    onClick={() => handleWordSelection(index)}
-                  >
-                    {word.word}
-                    {word.groupId && <span className="ml-1 text-xs">👥</span>}
-                  </span>
+                  <div key={index} className="flex items-center gap-3">
+                    {/* Checkbox for game participation */}
+                    <input
+                      type="checkbox"
+                      checked={isParticipating}
+                      onChange={() => handleWordParticipationToggle(index)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    
+                    {/* Word display */}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`rounded px-2 py-1 text-sm font-medium text-white ${
+                          colorStyle.className || ""
+                        } ${
+                          selectedWordIndices.includes(index)
+                            ? "ring-2 ring-blue-500"
+                            : ""
+                        }`}
+                        style={
+                          colorStyle.backgroundColor
+                            ? { backgroundColor: colorStyle.backgroundColor }
+                            : undefined
+                        }
+                        onClick={() => handleWordSelection(index)}
+                      >
+                        {word.word}
+                        {word.groupId && <span className="ml-1 text-xs">👥</span>}
+                      </span>
+                      
+                      {/* Color picker popover */}
+                      {isParticipating && (
+                        <Popover
+                          openPopover={openPopovers[index] || false}
+                          setOpenPopover={(open) => {
+                            if (typeof open === 'boolean') {
+                              togglePopover(index, open);
+                            } else {
+                              // Handle function case
+                              togglePopover(index, open(openPopovers[index] || false));
+                            }
+                          }}
+                          content={
+                            <div className="w-80 p-4 space-y-3">
+                              <h5 className="text-sm font-medium text-gray-700">
+                                Couleur pour "{word.word}"
+                              </h5>
+                              <ColorPicker
+                                selectedColor={wordColors[index] || "#D1D5DB"}
+                                onColorChange={(color) => {
+                                  handleWordColorChange(index, color);
+                                  togglePopover(index, false);
+                                }}
+                              />
+                            </div>
+                          }
+                        >
+                          <button
+                            type="button"
+                            className="h-6 w-6 rounded border border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            style={{
+                              backgroundColor: wordColors[index] || "#D1D5DB"
+                            }}
+                            title="Choisir la couleur"
+                          />
+                        </Popover>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>
