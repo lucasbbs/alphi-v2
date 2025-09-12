@@ -166,22 +166,35 @@ export default function JeuPage() {
   const getWordColorAndLetter = (word: GameWord, wordIndex: number) => {
     if (!selectedPoem) return null
 
-    // If word is part of a group, use group color
+    // Find the original word index in the poem to get admin-defined color
+    const participatingWords = selectedPoem.gameParticipatingWords || []
+    const originalWordIndex = participatingWords[wordIndex]
+    const adminColor = selectedPoem.wordColors?.[originalWordIndex]
+
+    // Get the word class for letter mapping
+    const wordClass = wordClasses.find(wc => wc.name === word.class)
+    const letter = wordClass ? wordClass.letter : 'X'
+
+    // Priority 1: Admin-defined color (highest priority)
+    if (adminColor) {
+      return {
+        color: adminColor,
+        letter: letter
+      }
+    }
+
+    // Priority 2: Group color (if word is part of a group)
     if (word.groupId) {
       const group = selectedPoem.wordGroups?.find(g => g.id === word.groupId)
       if (group) {
-        // For groups, we need to determine what letter to use
-        // We'll use the traditional class mapping for the letter, but the group color
-        const wordClass = wordClasses.find(wc => wc.name === word.class)
         return {
           color: group.color,
-          letter: wordClass ? wordClass.letter : 'X'
+          letter: letter
         }
       }
     }
     
-    // Otherwise use traditional class-based color and letter
-    const wordClass = wordClasses.find(wc => wc.name === word.class)
+    // Priority 3: Default class-based color (fallback)
     return wordClass ? {
       color: wordClass.color,
       letter: wordClass.letter
