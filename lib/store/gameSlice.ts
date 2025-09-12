@@ -23,6 +23,9 @@ export interface Poem {
   targetWord: string
   targetWordGender: 'masculin' | 'féminin'
   createdAt: string
+  // Game configuration
+  gameParticipatingWords?: number[] // Indices of words that participate in the game
+  wordColors?: {[key: number]: string} // Custom colors for each word
 }
 
 interface GameState {
@@ -69,7 +72,9 @@ const loadPersistedPoems = (): Poem[] => {
       ],
       targetWord: 'HORAIRE',
       targetWordGender: 'masculin',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      gameParticipatingWords: [0, 2, 3, 5], // Example: some words participating
+      wordColors: { 0: "#EF4444", 2: "#10B981", 3: "#10B981", 5: "#F59E0B" } // Example colors
     }
   ]
 }

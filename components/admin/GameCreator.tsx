@@ -23,7 +23,9 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
     words: editingPoem?.words || [],
     wordGroups: editingPoem?.wordGroups || [],
     targetWord: editingPoem?.targetWord || '',
-    targetWordGender: editingPoem?.targetWordGender || 'masculin' as 'masculin' | 'féminin'
+    targetWordGender: editingPoem?.targetWordGender || 'masculin' as 'masculin' | 'féminin',
+    gameParticipatingWords: editingPoem?.gameParticipatingWords || [],
+    wordColors: editingPoem?.wordColors || {}
   })
 
   const handleSave = () => {
@@ -56,7 +58,9 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
       wordGroups: formData.wordGroups,
       targetWord: formData.targetWord.toUpperCase(),
       targetWordGender: formData.targetWordGender,
-      createdAt: editingPoem?.createdAt || new Date().toISOString()
+      createdAt: editingPoem?.createdAt || new Date().toISOString(),
+      gameParticipatingWords: formData.gameParticipatingWords,
+      wordColors: formData.wordColors
     }
 
     if (editingPoem) {
@@ -80,7 +84,9 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
       wordGroups: formData.wordGroups,
       targetWord: formData.targetWord.toUpperCase(),
       targetWordGender: formData.targetWordGender,
-      createdAt: editingPoem?.createdAt || new Date().toISOString()
+      createdAt: editingPoem?.createdAt || new Date().toISOString(),
+      gameParticipatingWords: formData.gameParticipatingWords,
+      wordColors: formData.wordColors
     }
     onTestGame(poem)
   }
@@ -136,9 +142,13 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
           verse={formData.verse}
           words={formData.words}
           wordGroups={formData.wordGroups}
+          gameParticipatingWords={formData.gameParticipatingWords}
+          wordColors={formData.wordColors}
           onVerseChange={(verse) => setFormData(prev => ({ ...prev, verse }))}
           onWordsChange={(words) => setFormData(prev => ({ ...prev, words }))}
           onWordGroupsChange={(wordGroups) => setFormData(prev => ({ ...prev, wordGroups }))}
+          onGameParticipatingWordsChange={(gameParticipatingWords) => setFormData(prev => ({ ...prev, gameParticipatingWords }))}
+          onWordColorsChange={(wordColors) => setFormData(prev => ({ ...prev, wordColors }))}
         />
 
         {/* 3. Target Word Input */}
