@@ -50,6 +50,13 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
       return
     }
 
+    // Mystery word specific validations
+    const mysteryWordValidation = validateMysteryWord()
+    if (!mysteryWordValidation.isValid) {
+      toast.error(mysteryWordValidation.error)
+      return
+    }
+
     const poem: Poem = {
       id: editingPoem?.id || `poem-${Date.now()}`,
       image: formData.image,
@@ -89,6 +96,66 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
       wordColors: formData.wordColors
     }
     onTestGame(poem)
+  }
+
+  // Get participating words with their colors for mystery word preview
+  const getParticipatingWordsWithColors = () => {
+    return formData.gameParticipatingWords.map(wordIndex => {
+      const word = formData.words[wordIndex]
+      const color = formData.wordColors[wordIndex]
+      return {
+        word: word?.word || '',
+        color: color || '#D1D5DB',
+        index: wordIndex
+      }
+    })
+  }
+
+  // Validate mystery word against participating words
+  const validateMysteryWord = () => {
+    const participatingWords = getParticipatingWordsWithColors()
+    const mysteryLetters = formData.targetWord.toUpperCase().split('')
+    
+    // Validation 1: Number of letters should match number of selected words
+    if (mysteryLetters.length !== participatingWords.length) {
+      return {
+        isValid: false,
+        error: `Le mot mystère doit avoir ${participatingWords.length} lettre${participatingWords.length > 1 ? 's' : ''} pour correspondre aux ${participatingWords.length} mot${participatingWords.length > 1 ? 's' : ''} sélectionné${participatingWords.length > 1 ? 's' : ''}`
+      }
+    }
+
+    // Validation 2: Same letters should have same colors
+    const letterColorMap = new Map<string, string>()
+    for (let i = 0; i < mysteryLetters.length; i++) {
+      const letter = mysteryLetters[i]
+      const color = participatingWords[i].color
+      
+      if (letterColorMap.has(letter)) {
+        if (letterColorMap.get(letter) !== color) {
+          return {
+            isValid: false,
+            error: `La lettre "${letter}" apparaît plusieurs fois mais avec des couleurs différentes. Assurez-vous que tous les mots correspondant à la même lettre aient la même couleur.`
+          }
+        }
+      } else {
+        letterColorMap.set(letter, color)
+      }
+    }
+
+    return { isValid: true, error: '' }
+  }
+
+  // Get mystery word preview with colors
+  const getMysteryWordPreview = () => {
+    const participatingWords = getParticipatingWordsWithColors()
+    const mysteryLetters = formData.targetWord.toUpperCase().split('')
+    
+    return mysteryLetters.map((letter, index) => ({
+      letter,
+      color: participatingWords[index]?.color || '#D1D5DB',
+      word: participatingWords[index]?.word || '',
+      isValid: index < participatingWords.length
+    }))
   }
 
   const canTest = formData.verse.trim() && 
@@ -166,6 +233,72 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
           <p className="text-sm text-gray-500 mt-1">
             Ce mot sera formé en glissant-déposant les lettres colorées
           </p>
+
+          {/* Mystery Word Preview */}
+          {formData.targetWord.trim() && formData.gameParticipatingWords.length > 0 && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Aperçu du mot mystère :</h4>
+              
+              {/* Letter preview */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {getMysteryWordPreview().map((letterInfo, index) => (
+                  <div key={index} className="text-center">
+                    <div
+                      className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg border-2"
+                      style={{ 
+                        backgroundColor: letterInfo.isValid ? letterInfo.color : '#E5E7EB',
+                        borderColor: letterInfo.isValid ? letterInfo.color : '#D1D5DB'
+                      }}
+                    >
+                      {letterInfo.letter}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1 max-w-12 truncate" title={letterInfo.word}>
+                      {letterInfo.isValid ? letterInfo.word : '?'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Validation status */}
+              {(() => {
+                const validation = validateMysteryWord()
+                return (
+                  <div className={`text-sm p-2 rounded ${validation.isValid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {validation.isValid ? (
+                      <span className="flex items-center">
+                        ✅ Configuration valide
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        ❌ {validation.error}
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Word mapping display */}
+              {formData.targetWord.trim() && formData.gameParticipatingWords.length > 0 && (
+                <div className="mt-3 text-xs text-gray-600">
+                  <p className="font-medium mb-1">Correspondance :</p>
+                  <div className="space-y-1">
+                    {getMysteryWordPreview().map((letterInfo, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <span 
+                          className="inline-block w-6 h-6 rounded text-white text-center text-xs font-bold flex items-center justify-center"
+                          style={{ backgroundColor: letterInfo.color }}
+                        >
+                          {letterInfo.letter}
+                        </span>
+                        <span>→</span>
+                        <span>{letterInfo.isValid ? letterInfo.word : 'Mot manquant'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 4. Gender Selection */}
