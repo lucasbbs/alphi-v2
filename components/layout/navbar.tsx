@@ -18,37 +18,32 @@ export default function NavBar() {
             : "bg-white/0"
         } z-30 transition-all`}
       >
-        <div className="mx-5 flex h-16 w-full max-w-screen-xl items-center justify-between">
-          <Link href="/" className="flex items-center font-display text-2xl">
-            <Image
-              src="/logo.png"
-              alt="Alphi logo"
-              width="30"
-              height="30"
-              className="mr-2 rounded-sm"
-            ></Image>
-            <p className="text-orange-600 font-bold">🎯 Alphi</p>
+        <div className="mx-5 my-2 flex h-fit w-full max-w-screen-xl items-center justify-between md:my-0 md:h-16">
+          <Link href="/" className="flex items-center font-display text-3xl">
+            <p className="font-bold text-orange-600">
+              <span className="text-4xl">🎯</span> Alphi
+            </p>
           </Link>
 
-          <div className="hidden md:flex items-center space-x-6">
-            <Link 
-              href="/jeu" 
-              className="flex items-center space-x-1 text-gray-600 hover:text-orange-600 font-medium transition-colors"
+          <div className="flex flex-col items-center gap-2 md:flex-row md:space-x-6">
+            <Link
+              href="/jeu"
+              className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
             >
               <span>🎮</span>
               <span>Jouer</span>
             </Link>
             <SignedIn>
-              <Link 
-                href="/admin" 
-                className="flex items-center space-x-1 text-gray-600 hover:text-orange-600 font-medium transition-colors"
+              <Link
+                href="/admin"
+                className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
               >
                 <span>👩‍🏫</span>
                 <span>Administration</span>
               </Link>
-              <Link 
-                href="/progres" 
-                className="flex items-center space-x-1 text-gray-600 hover:text-orange-600 font-medium transition-colors"
+              <Link
+                href="/progres"
+                className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
               >
                 <span>📈</span>
                 <span>Mes Progrès</span>
@@ -59,17 +54,17 @@ export default function NavBar() {
           <div className="flex items-center space-x-4">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="bg-orange-500 text-white px-4 py-2 rounded-full font-medium hover:bg-orange-600 transition-colors">
+                <button className="rounded-full bg-orange-500 px-4 py-2 font-medium text-white transition-colors hover:bg-orange-600">
                   Se Connecter
                 </button>
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <UserButton 
+              <UserButton
                 appearance={{
                   elements: {
-                    avatarBox: "w-8 h-8"
-                  }
+                    avatarBox: "w-8 h-8",
+                  },
                 }}
               >
                 <UserButton.MenuItems>

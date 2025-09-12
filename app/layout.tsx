@@ -10,10 +10,10 @@ import { Toaster } from "react-hot-toast";
 import { ReduxProvider } from "@/lib/store/provider";
 
 export const metadata = {
-  title: "Precedent - Building blocks for your Next.js project",
+  title: "Alphi",
   description:
-    "Precedent is the all-in-one solution for your Next.js project. It includes a design system, authentication, analytics, and more.",
-  metadataBase: new URL("https://precedent.dev"),
+    "Alphi is a learning platform that uses games to help you learn french grammar fast.",
+  metadataBase: new URL("https://alphi-app.netlify.app"),
 };
 
 export default async function RootLayout({
@@ -26,28 +26,28 @@ export default async function RootLayout({
       <ReduxProvider>
         <html lang="en">
           <body className={cx(sfPro.variable, inter.variable)}>
-            <div className="fixed h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-cyan-100 -z-10" />
+            <div className="fixed top-0 z-30 flex w-full justify-center border-b border-gray-200 bg-white/75" />
             <Suspense fallback="...">
               <Navbar />
             </Suspense>
-            <main className="relative z-10 flex min-h-screen w-full flex-col items-center py-16">
+            <main className="relative z-10 flex min-h-screen w-full flex-col items-center pb-20 pt-20 md:py-16">
               {children}
             </main>
-          <Footer />
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              duration: 3000,
-              style: {
-                background: '#333',
-                color: '#fff',
-                fontSize: '16px',
-                borderRadius: '10px',
-                padding: '12px 16px'
-              }
-            }}
-          />
-          <VercelAnalytics />
+            <Footer />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 3000,
+                style: {
+                  background: "#333",
+                  color: "#fff",
+                  fontSize: "16px",
+                  borderRadius: "10px",
+                  padding: "12px 16px",
+                },
+              }}
+            />
+            <VercelAnalytics />
           </body>
         </html>
       </ReduxProvider>
