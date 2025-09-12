@@ -5,17 +5,17 @@ import { GameWord, WordGroup } from "@/lib/store/gameSlice";
 import ColorPicker from "./ColorPicker";
 import Popover from "@/components/shared/popover";
 
-const wordClasses = [
-  { name: "adverbe", color: "bg-orange-400" },
-  { name: "déterminant défini", color: "bg-pink-400" },
-  { name: "verbe", color: "bg-green-400" },
-  { name: "déterminant possessif", color: "bg-yellow-400" },
-  { name: "adjectif", color: "bg-red-400" },
-  { name: "préposition", color: "bg-green-400" },
-  { name: "nom commun", color: "bg-blue-400" },
-  { name: "pronom", color: "bg-purple-400" },
-  { name: "conjonction", color: "bg-indigo-400" },
-  { name: "interjection", color: "bg-cyan-400" },
+export const wordClasses = [
+  "adverbe",
+  "déterminant défini",
+  "verbe",
+  "déterminant possessif",
+  "adjectif",
+  "préposition",
+  "nom commun",
+  "pronom",
+  "conjonction",
+  "interjection",
 ];
 
 interface VerseEditorProps {
@@ -23,12 +23,12 @@ interface VerseEditorProps {
   words: GameWord[];
   wordGroups: WordGroup[];
   gameParticipatingWords?: number[];
-  wordColors?: {[key: number]: string};
+  wordColors?: { [key: number]: string };
   onVerseChange: (verse: string) => void;
   onWordsChange: (words: GameWord[]) => void;
   onWordGroupsChange: (groups: WordGroup[]) => void;
   onGameParticipatingWordsChange?: (participatingWords: number[]) => void;
-  onWordColorsChange?: (wordColors: {[key: number]: string}) => void;
+  onWordColorsChange?: (wordColors: { [key: number]: string }) => void;
 }
 
 export default function VerseEditor({
@@ -48,10 +48,16 @@ export default function VerseEditor({
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupColor, setNewGroupColor] = useState("#EF4444");
-  const [gameParticipatingWords, setGameParticipatingWords] = useState<number[]>(initialGameParticipatingWords);
-  const [wordColors, setWordColors] = useState<{[key: number]: string}>(initialWordColors);
-  const [openPopovers, setOpenPopovers] = useState<{[key: number]: boolean}>({});
-  const prevVerseRef = useRef<string>('');
+  const [gameParticipatingWords, setGameParticipatingWords] = useState<
+    number[]
+  >(initialGameParticipatingWords);
+  const [wordColors, setWordColors] = useState<{ [key: number]: string }>(
+    initialWordColors,
+  );
+  const [openPopovers, setOpenPopovers] = useState<{ [key: number]: boolean }>(
+    {},
+  );
+  const prevVerseRef = useRef<string>("");
 
   // Sync local state with prop changes (e.g., when loading existing poems)
   useEffect(() => {
@@ -64,7 +70,11 @@ export default function VerseEditor({
 
   // Clear participation and colors only when verse actually changes (avoid index drift)
   useEffect(() => {
-    if (verse !== prevVerseRef.current && prevVerseRef.current !== '' && verse !== '') {
+    if (
+      verse !== prevVerseRef.current &&
+      prevVerseRef.current !== "" &&
+      verse !== ""
+    ) {
       // Only clear if verse actually changed from a non-empty previous value
       setGameParticipatingWords([]);
       setWordColors({});
@@ -293,22 +303,30 @@ export default function VerseEditor({
   const handleClassChange = (wordIndex: number, className: string) => {
     const updatedWords = [...parsedWords];
     const word = parsedWords[wordIndex];
-    
+
     // Check if this word is part of a group
-    const group = word?.groupId ? (wordGroups ?? []).find(g => g.id === word.groupId) : null;
-    
+    const group = word?.groupId
+      ? (wordGroups ?? []).find((g) => g.id === word.groupId)
+      : null;
+
     if (group) {
       // Update class for all words in the group
-      group.wordIndices.forEach(groupIndex => {
+      group.wordIndices.forEach((groupIndex) => {
         if (updatedWords[groupIndex]) {
-          updatedWords[groupIndex] = { ...updatedWords[groupIndex], class: className };
+          updatedWords[groupIndex] = {
+            ...updatedWords[groupIndex],
+            class: className,
+          };
         }
       });
     } else {
       // Update individual word
-      updatedWords[wordIndex] = { ...updatedWords[wordIndex], class: className };
+      updatedWords[wordIndex] = {
+        ...updatedWords[wordIndex],
+        class: className,
+      };
     }
-    
+
     setParsedWords(updatedWords);
     onWordsChange(updatedWords);
   };
@@ -381,28 +399,32 @@ export default function VerseEditor({
   };
 
   const handleWordParticipationToggle = (index: number) => {
-    setGameParticipatingWords(prev => {
+    setGameParticipatingWords((prev) => {
       let newParticipatingWords = [...prev];
       let newWordColors = { ...wordColors };
-      
+
       // Check if this word is part of a group
       const word = parsedWords[index];
-      const group = word?.groupId ? (wordGroups ?? []).find(g => g.id === word.groupId) : null;
-      
+      const group = word?.groupId
+        ? (wordGroups ?? []).find((g) => g.id === word.groupId)
+        : null;
+
       if (group) {
         // Handle group participation - all words in group together
         const firstIndex = group.wordIndices[0];
         const isGroupParticipating = prev.includes(firstIndex);
-        
+
         if (isGroupParticipating) {
           // Remove entire group from game and clear colors
-          group.wordIndices.forEach(groupIndex => {
-            newParticipatingWords = newParticipatingWords.filter(i => i !== groupIndex);
+          group.wordIndices.forEach((groupIndex) => {
+            newParticipatingWords = newParticipatingWords.filter(
+              (i) => i !== groupIndex,
+            );
             delete newWordColors[groupIndex];
           });
         } else {
           // Add entire group to game with default colors
-          group.wordIndices.forEach(groupIndex => {
+          group.wordIndices.forEach((groupIndex) => {
             if (!newParticipatingWords.includes(groupIndex)) {
               newParticipatingWords.push(groupIndex);
             }
@@ -413,7 +435,7 @@ export default function VerseEditor({
         // Handle individual word participation
         if (prev.includes(index)) {
           // Remove from game and clear custom color
-          newParticipatingWords = prev.filter(i => i !== index);
+          newParticipatingWords = prev.filter((i) => i !== index);
           delete newWordColors[index];
         } else {
           // Add to game with default light gray color
@@ -421,40 +443,41 @@ export default function VerseEditor({
           newWordColors[index] = "#D1D5DB";
         }
       }
-      
+
       // Sync back to parent
       onGameParticipatingWordsChange?.(newParticipatingWords);
       setWordColors(newWordColors);
       onWordColorsChange?.(newWordColors);
-      
+
       return newParticipatingWords;
     });
   };
 
   const handleWordColorChange = (index: number, color: string) => {
     const word = parsedWords[index];
-    const group = word?.groupId ? (wordGroups ?? []).find(g => g.id === word.groupId) : null;
-    
+    const group = word?.groupId
+      ? (wordGroups ?? []).find((g) => g.id === word.groupId)
+      : null;
+
     let newWordColors = { ...wordColors };
-    
+
     if (group) {
       // Update color for all words in the group
-      group.wordIndices.forEach(groupIndex => {
+      group.wordIndices.forEach((groupIndex) => {
         newWordColors[groupIndex] = color;
       });
     } else {
       // Update individual word color
       newWordColors[index] = color;
     }
-    
+
     setWordColors(newWordColors);
     onWordColorsChange?.(newWordColors);
   };
 
   const togglePopover = (index: number, open: boolean) => {
-    setOpenPopovers(prev => ({ ...prev, [index]: open }));
+    setOpenPopovers((prev) => ({ ...prev, [index]: open }));
   };
-
 
   return (
     <div className="space-y-6">
@@ -489,25 +512,30 @@ export default function VerseEditor({
               {parsedWords.map((word, index) => {
                 const colorStyle = getWordColor(word, index);
                 const isParticipating = gameParticipatingWords.includes(index);
-                
+
                 // Check if this word is part of a group
-                const group = word.groupId ? (wordGroups ?? []).find(g => g.id === word.groupId) : null;
-                
+                const group = word.groupId
+                  ? (wordGroups ?? []).find((g) => g.id === word.groupId)
+                  : null;
+
                 // Skip individual words that are part of a group (except first one)
                 if (group) {
                   // Only show for the first word in the group
                   if (group.wordIndices[0] !== index) {
                     return null;
                   }
-                  
+
                   // Show grouped words as single unit
                   const groupWords = group.wordIndices
-                    .map(i => parsedWords[i]?.word)
+                    .map((i) => parsedWords[i]?.word)
                     .filter(Boolean)
-                    .join(' ');
-                    
+                    .join(" ");
+
                   return (
-                    <div key={`group-${word.groupId}`} className="flex items-center gap-3">
+                    <div
+                      key={`group-${word.groupId}`}
+                      className="flex items-center gap-3"
+                    >
                       {/* Checkbox for game participation */}
                       <input
                         type="checkbox"
@@ -515,7 +543,7 @@ export default function VerseEditor({
                         onChange={() => handleWordParticipationToggle(index)}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      
+
                       {/* Word display */}
                       <div className="flex items-center gap-2">
                         <span
@@ -536,21 +564,24 @@ export default function VerseEditor({
                           {groupWords}
                           <span className="ml-1 text-xs">👥</span>
                         </span>
-                        
+
                         {/* Color picker popover */}
                         {isParticipating && (
                           <Popover
                             openPopover={openPopovers[index] || false}
                             setOpenPopover={(open) => {
-                              if (typeof open === 'boolean') {
+                              if (typeof open === "boolean") {
                                 togglePopover(index, open);
                               } else {
                                 // Handle function case
-                                togglePopover(index, open(openPopovers[index] || false));
+                                togglePopover(
+                                  index,
+                                  open(openPopovers[index] || false),
+                                );
                               }
                             }}
                             content={
-                              <div className="w-80 p-4 space-y-3">
+                              <div className="w-80 space-y-3 p-4">
                                 <h5 className="text-sm font-medium text-gray-700">
                                   Couleur pour "{groupWords}"
                                 </h5>
@@ -568,7 +599,7 @@ export default function VerseEditor({
                               type="button"
                               className="h-6 w-6 rounded border border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               style={{
-                                backgroundColor: wordColors[index] || "#D1D5DB"
+                                backgroundColor: wordColors[index] || "#D1D5DB",
                               }}
                               title="Choisir la couleur"
                             />
@@ -578,7 +609,7 @@ export default function VerseEditor({
                     </div>
                   );
                 }
-                
+
                 // Individual word (not in a group)
                 return (
                   <div key={index} className="flex items-center gap-3">
@@ -589,7 +620,7 @@ export default function VerseEditor({
                       onChange={() => handleWordParticipationToggle(index)}
                       className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    
+
                     {/* Word display */}
                     <div className="flex items-center gap-2">
                       <span
@@ -609,21 +640,24 @@ export default function VerseEditor({
                       >
                         {word.word}
                       </span>
-                      
+
                       {/* Color picker popover */}
                       {isParticipating && (
                         <Popover
                           openPopover={openPopovers[index] || false}
                           setOpenPopover={(open) => {
-                            if (typeof open === 'boolean') {
+                            if (typeof open === "boolean") {
                               togglePopover(index, open);
                             } else {
                               // Handle function case
-                              togglePopover(index, open(openPopovers[index] || false));
+                              togglePopover(
+                                index,
+                                open(openPopovers[index] || false),
+                              );
                             }
                           }}
                           content={
-                            <div className="w-80 p-4 space-y-3">
+                            <div className="w-80 space-y-3 p-4">
                               <h5 className="text-sm font-medium text-gray-700">
                                 Couleur pour "{word.word}"
                               </h5>
@@ -641,7 +675,7 @@ export default function VerseEditor({
                             type="button"
                             className="h-6 w-6 rounded border border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             style={{
-                              backgroundColor: wordColors[index] || "#D1D5DB"
+                              backgroundColor: wordColors[index] || "#D1D5DB",
                             }}
                             title="Choisir la couleur"
                           />
@@ -771,41 +805,47 @@ export default function VerseEditor({
           <div className="space-y-3">
             {parsedWords.map((word, index) => {
               // Check if this word is part of a group
-              const group = word.groupId ? (wordGroups ?? []).find(g => g.id === word.groupId) : null;
-              
+              const group = word.groupId
+                ? (wordGroups ?? []).find((g) => g.id === word.groupId)
+                : null;
+
               // Skip individual words that are part of a group (except first one)
               if (group && group.wordIndices[0] !== index) {
                 return null;
               }
-              
+
               // Check participation - for groups, check if any word in group is participating
-              const isParticipating = group 
-                ? group.wordIndices.some(i => gameParticipatingWords.includes(i))
+              const isParticipating = group
+                ? group.wordIndices.some((i) =>
+                    gameParticipatingWords.includes(i),
+                  )
                 : gameParticipatingWords.includes(index);
-              
+
               // Only show dropdown for participating words/groups
               if (!isParticipating) return null;
-              
+
               if (group) {
                 // Show grouped words as single unit
                 const groupWords = group.wordIndices
-                  .map(i => parsedWords[i]?.word)
+                  .map((i) => parsedWords[i]?.word)
                   .filter(Boolean)
-                  .join(' ');
-                  
+                  .join(" ");
+
                 return (
-                  <div key={`dropdown-group-${word.groupId}`} className="flex items-center space-x-4">
+                  <div
+                    key={`dropdown-group-${word.groupId}`}
+                    className="flex items-center space-x-4"
+                  >
                     <div className="w-32 text-right">
                       <span className="text-sm font-medium text-gray-700">
-                        "{groupWords}"
-                        <span className="ml-1 text-xs">👥</span>
+                        "{groupWords}"<span className="ml-1 text-xs">👥</span>
                       </span>
                     </div>
                     <select
                       value={word.class || ""}
                       onChange={(e) => {
                         // Update class for all words in this group
-                        group.wordIndices.forEach(groupIndex => {
+                        group.wordIndices.forEach((groupIndex) => {
                           handleClassChange(groupIndex, e.target.value);
                         });
                       }}
@@ -813,8 +853,8 @@ export default function VerseEditor({
                     >
                       <option value="">Choisir une classe...</option>
                       {wordClasses.map((wc) => (
-                        <option key={wc.name} value={wc.name}>
-                          {wc.name}
+                        <option key={wc} value={wc}>
+                          {wc}
                         </option>
                       ))}
                     </select>
@@ -826,7 +866,8 @@ export default function VerseEditor({
                         style={
                           getWordColor(word, index).backgroundColor
                             ? {
-                                backgroundColor: getWordColor(word, index).backgroundColor,
+                                backgroundColor: getWordColor(word, index)
+                                  .backgroundColor,
                               }
                             : undefined
                         }
@@ -835,10 +876,13 @@ export default function VerseEditor({
                   </div>
                 );
               }
-              
+
               // Individual word dropdown
               return (
-                <div key={`dropdown-${index}`} className="flex items-center space-x-4">
+                <div
+                  key={`dropdown-${index}`}
+                  className="flex items-center space-x-4"
+                >
                   <div className="w-32 text-right">
                     <span className="text-sm font-medium text-gray-700">
                       "{word.word}"
@@ -851,8 +895,8 @@ export default function VerseEditor({
                   >
                     <option value="">Choisir une classe...</option>
                     {wordClasses.map((wc) => (
-                      <option key={wc.name} value={wc.name}>
-                        {wc.name}
+                      <option key={wc} value={wc}>
+                        {wc}
                       </option>
                     ))}
                   </select>
@@ -864,7 +908,8 @@ export default function VerseEditor({
                       style={
                         getWordColor(word, index).backgroundColor
                           ? {
-                              backgroundColor: getWordColor(word, index).backgroundColor,
+                              backgroundColor: getWordColor(word, index)
+                                .backgroundColor,
                             }
                           : undefined
                       }
