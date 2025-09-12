@@ -712,21 +712,44 @@ export default function JeuPage() {
               <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 mb-8">
                 <h3 className="text-lg font-semibold text-gray-800 text-center mb-4">Votre sélection :</h3>
                 <div className="text-center text-lg flex flex-wrap justify-center gap-2">
-                  {gameWords.map((wordData, index) => {
-                    const colorInfo = getWordColorAndLetter(wordData, index)
-                    return (
-                      <span 
-                        key={index}
-                        className={`px-3 py-1 rounded-full text-white font-medium ${
-                          colorInfo && !colorInfo.color.startsWith('#') ? colorInfo.color : 'bg-gray-400'
-                        }`}
-                        style={colorInfo && colorInfo.color.startsWith('#') ? 
-                          { backgroundColor: colorInfo.color } : undefined}
-                      >
-                        {wordData.word}
-                      </span>
-                    )
-                  })}
+                  {(() => {
+                    // Group words by groupId, keeping track of original indices for color mapping
+                    const groupedWords = new Map<string | null, Array<{ word: string, index: number }>>()
+                    
+                    gameWords.forEach((wordData, index) => {
+                      const groupKey = wordData.groupId || `individual_${index}`
+                      if (!groupedWords.has(groupKey)) {
+                        groupedWords.set(groupKey, [])
+                      }
+                      groupedWords.get(groupKey)!.push({ word: wordData.word, index })
+                    })
+
+                    // Render grouped spans
+                    return Array.from(groupedWords.entries()).map(([groupKey, wordsInGroup]) => {
+                      // Use the first word's color info for the entire group
+                      const firstWordIndex = wordsInGroup[0].index
+                      const firstWordData = gameWords[firstWordIndex]
+                      const colorInfo = getWordColorAndLetter(firstWordData, firstWordIndex)
+                      
+                      // Combine all words in the group
+                      const groupText = wordsInGroup.map(w => w.word).join(' ')
+                      const isGroup = firstWordData.groupId !== undefined && wordsInGroup.length > 1
+                      
+                      return (
+                        <span 
+                          key={groupKey}
+                          className={`px-3 py-1 rounded-full text-white font-medium ${
+                            colorInfo && !colorInfo.color.startsWith('#') ? colorInfo.color : 'bg-gray-400'
+                          }`}
+                          style={colorInfo && colorInfo.color.startsWith('#') ? 
+                            { backgroundColor: colorInfo.color } : undefined}
+                        >
+                          {groupText}
+                          {isGroup && ' 👥'}
+                        </span>
+                      )
+                    })
+                  })()}
                 </div>
                 <p className="text-center text-sm text-gray-600 mt-3">
                   Chaque couleur correspond à une classe grammaticale ou un groupe de mots de vos réponses précédentes
