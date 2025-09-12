@@ -135,8 +135,6 @@ export default function JeuPage() {
 
   const handlePoemSelection = (poem: Poem) => {
     setSelectedPoem(poem)
-    // Garder les bonnes réponses pour vérification
-    setCorrectAnswers([...poem.words])
     
     // Only include words that are marked as participating in the game
     const participatingWords = poem.gameParticipatingWords || []
@@ -145,6 +143,12 @@ export default function JeuPage() {
       .filter((word): word is GameWord => word !== null)
     
     setGameWords(gameWords)
+    
+    // Create aligned correct answers for the filtered game words
+    const alignedCorrectAnswers = poem.words
+      .filter((_, index) => participatingWords.includes(index))
+    setCorrectAnswers(alignedCorrectAnswers)
+    
     setCurrentStep(2)
     
     // Démarrer le timer si ce n'est pas déjà fait
@@ -187,12 +191,12 @@ export default function JeuPage() {
   const proceedToStep3 = () => {
     if (!selectedPoem) return
 
-    // Create a mapping of letters to colors based on the current poem's words and groups
+    // Create a mapping of letters to colors based on the participating gameWords (user-assigned classes)
     // Priority: custom hex colors > class colors
     const letterColorMap = new Map<string, string>()
     
-    selectedPoem.words.forEach((word, index) => {
-      const colorInfo = getWordColorAndLetter(word, index)
+    gameWords.forEach((gameWord, gameWordIndex) => {
+      const colorInfo = getWordColorAndLetter(gameWord, gameWordIndex)
       if (colorInfo) {
         const existingColor = letterColorMap.get(colorInfo.letter)
         
@@ -496,25 +500,69 @@ export default function JeuPage() {
             <div className="bg-gray-50 rounded-2xl p-6 mb-8">
               <h3 className="font-semibold text-gray-800 mb-4">Vers sélectionné :</h3>
               <p className="text-lg text-gray-700">
-                {selectedPoem.verse.split(' ').map((verseWord, verseIndex) => {
-                  // Check if this verse word corresponds to a participating word
-                  const participatingWords = selectedPoem.gameParticipatingWords || []
-                  const cleanVerseWord = verseWord.replace(/[.,!?]/g, '')
+                {(() => {
+                  // Create position-based highlighting by mapping word indices to verse positions
+                  const participatingWords = selectedPoem.gameParticipatingWords || [];
+                  const words = selectedPoem.words;
+                  const verse = selectedPoem.verse;
                   
-                  // Check if any participating word matches this verse word
-                  const isParticipating = participatingWords.some(participatingIndex => {
-                    const originalWord = selectedPoem.words[participatingIndex]
-                    return originalWord && originalWord.word.toLowerCase() === cleanVerseWord.toLowerCase()
-                  })
+                  // Find word positions in verse by matching sequentially
+                  let currentPos = 0;
+                  const wordPositions: { start: number; end: number; wordIndex: number; word: string }[] = [];
                   
-                  return isParticipating ? (
-                    <span key={verseIndex} className="font-bold text-orange-600 mx-1">
-                      {verseWord}
-                    </span>
-                  ) : (
-                    <span key={verseIndex} className="mx-1">{verseWord}</span>
-                  )
-                })}
+                  words.forEach((word, wordIndex) => {
+                    const wordText = word.word;
+                    const searchPos = verse.toLowerCase().indexOf(wordText.toLowerCase(), currentPos);
+                    
+                    if (searchPos >= 0) {
+                      wordPositions.push({
+                        start: searchPos,
+                        end: searchPos + wordText.length,
+                        wordIndex,
+                        word: wordText
+                      });
+                      currentPos = searchPos + wordText.length;
+                    }
+                  });
+                  
+                  // Sort by position to maintain order
+                  wordPositions.sort((a, b) => a.start - b.start);
+                  
+                  // Build highlighted verse
+                  const highlightedParts: JSX.Element[] = [];
+                  let lastPos = 0;
+                  
+                  wordPositions.forEach((wordPos, index) => {
+                    // Add text before this word
+                    if (wordPos.start > lastPos) {
+                      highlightedParts.push(
+                        <span key={`text-${index}`}>{verse.substring(lastPos, wordPos.start)}</span>
+                      );
+                    }
+                    
+                    // Add the word (highlighted if participating)
+                    const isParticipating = participatingWords.includes(wordPos.wordIndex);
+                    highlightedParts.push(
+                      <span 
+                        key={`word-${wordPos.wordIndex}`}
+                        className={isParticipating ? "font-bold text-orange-600" : ""}
+                      >
+                        {verse.substring(wordPos.start, wordPos.end)}
+                      </span>
+                    );
+                    
+                    lastPos = wordPos.end;
+                  });
+                  
+                  // Add remaining text after last word
+                  if (lastPos < verse.length) {
+                    highlightedParts.push(
+                      <span key="text-end">{verse.substring(lastPos)}</span>
+                    );
+                  }
+                  
+                  return highlightedParts;
+                })()}
               </p>
             </div>
 
@@ -524,8 +572,15 @@ export default function JeuPage() {
                 <div className="space-y-3">
                   {(() => {
                     // Process words to handle groups properly
-                    const processedWords = [];
-                    const processedIndices = new Set();
+                    interface ProcessedWordItem {
+                      displayText: string;
+                      gameWord: GameWord;
+                      index: number;
+                      isGroup: boolean;
+                    }
+                    
+                    const processedWords: ProcessedWordItem[] = [];
+                    const processedIndices = new Set<number>();
                     
                     gameWords.forEach((gameWord, index) => {
                       if (processedIndices.has(index)) return;
@@ -534,18 +589,23 @@ export default function JeuPage() {
                       const group = gameWord.groupId ? selectedPoem.wordGroups?.find(g => g.id === gameWord.groupId) : null;
                       
                       if (group) {
-                        // Find all words in this group that are in gameWords
-                        const groupWordsInGame = group.wordIndices
+                        // For groups, display all group words in original order
+                        const participatingWords = selectedPoem.gameParticipatingWords || [];
+                        const groupWordsWithIndices = group.wordIndices
                           .map(originalIndex => {
-                            const participatingWords = selectedPoem.gameParticipatingWords || [];
                             const gameWordIndex = participatingWords.findIndex(pIndex => pIndex === originalIndex);
-                            return gameWordIndex >= 0 ? gameWords[gameWordIndex] : null;
+                            return gameWordIndex >= 0 ? { 
+                              word: gameWords[gameWordIndex], 
+                              gameIndex: gameWordIndex,
+                              originalIndex 
+                            } : null;
                           })
-                          .filter(Boolean);
+                          .filter((item): item is { word: GameWord; gameIndex: number; originalIndex: number } => item !== null)
+                          .sort((a, b) => a.originalIndex - b.originalIndex); // Maintain original order
                         
-                        if (groupWordsInGame.length > 0) {
+                        if (groupWordsWithIndices.length > 0) {
                           // Display as a group
-                          const groupText = groupWordsInGame.map(gw => gw.word).join(' ');
+                          const groupText = groupWordsWithIndices.map(item => item.word.word).join(' ');
                           processedWords.push({
                             displayText: `${groupText} 👥`,
                             gameWord: gameWord, // Use the first word for class assignment
@@ -554,9 +614,8 @@ export default function JeuPage() {
                           });
                           
                           // Mark all group members as processed
-                          groupWordsInGame.forEach(gw => {
-                            const idx = gameWords.findIndex(word => word === gw);
-                            if (idx >= 0) processedIndices.add(idx);
+                          groupWordsWithIndices.forEach(item => {
+                            processedIndices.add(item.gameIndex);
                           });
                         }
                       } else {
