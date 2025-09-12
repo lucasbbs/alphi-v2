@@ -1,17 +1,18 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Session } from '@clerk/nextjs/server'
 
-// Create a custom Supabase client that works with Clerk authentication
-export function createClerkSupabaseClient(session: Session | null): SupabaseClient {
+// Create a custom Supabase client that works with Clerk authentication (server-side)
+export async function createClerkSupabaseClientServer(sessionToken: string | null): Promise<SupabaseClient> {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       global: {
         // Pass the Clerk session token as the JWT to Supabase
-        headers: {
-          Authorization: `Bearer ${session?.getToken({ template: 'supabase' })}`,
-        },
+        headers: sessionToken
+          ? {
+              Authorization: `Bearer ${sessionToken}`,
+            }
+          : {},
       },
     }
   )
