@@ -98,29 +98,75 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
     onTestGame(poem)
   }
 
-  // Get participating words with their colors for mystery word preview
+  // Get participating units (words or groups) with their colors for mystery word preview
   const getParticipatingWordsWithColors = () => {
-    return formData.gameParticipatingWords.map(wordIndex => {
+    const processedIndices = new Set<number>()
+    const participatingUnits: Array<{
+      word: string;
+      color: string;
+      index: number;
+      isGroup: boolean;
+    }> = []
+
+    formData.gameParticipatingWords.forEach(wordIndex => {
+      if (processedIndices.has(wordIndex)) return
+
       const word = formData.words[wordIndex]
-      const color = formData.wordColors[wordIndex]
-      return {
-        word: word?.word || '',
-        color: color || '#D1D5DB',
-        index: wordIndex
+      if (!word) return
+
+      // Check if this word is part of a group
+      const group = word.groupId ? formData.wordGroups?.find(g => g.id === word.groupId) : null
+      
+      if (group) {
+        // Find all participating words in this group
+        const groupParticipatingWords = group.wordIndices.filter(idx => 
+          formData.gameParticipatingWords.includes(idx)
+        )
+        
+        if (groupParticipatingWords.length > 0) {
+          // Sort by original indices to maintain word order within group
+          groupParticipatingWords.sort((a, b) => a - b)
+          
+          // Get group words text and use first word's color (groups should have consistent colors)
+          const groupWords = groupParticipatingWords.map(idx => formData.words[idx]?.word || '').join(' ')
+          const groupColor = formData.wordColors[groupParticipatingWords[0]] || '#D1D5DB'
+          
+          participatingUnits.push({
+            word: groupWords,
+            color: groupColor,
+            index: wordIndex, // Use first word's index for reference
+            isGroup: true
+          })
+          
+          // Mark all group members as processed
+          groupParticipatingWords.forEach(idx => processedIndices.add(idx))
+        }
+      } else {
+        // Individual word
+        participatingUnits.push({
+          word: word.word,
+          color: formData.wordColors[wordIndex] || '#D1D5DB',
+          index: wordIndex,
+          isGroup: false
+        })
+        processedIndices.add(wordIndex)
       }
     })
+
+    return participatingUnits
   }
 
-  // Validate mystery word against participating words
+  // Validate mystery word against participating units
   const validateMysteryWord = () => {
-    const participatingWords = getParticipatingWordsWithColors()
+    const participatingUnits = getParticipatingWordsWithColors()
     const mysteryLetters = formData.targetWord.toUpperCase().split('')
     
-    // Validation 1: Number of letters should match number of selected words
-    if (mysteryLetters.length !== participatingWords.length) {
+    // Validation 1: Number of letters should match number of participating units (words/groups)
+    if (mysteryLetters.length !== participatingUnits.length) {
+      const unitDescription = participatingUnits.length === 1 ? 'unité sélectionnée' : 'unités sélectionnées'
       return {
         isValid: false,
-        error: `Le mot mystère doit avoir ${participatingWords.length} lettre${participatingWords.length > 1 ? 's' : ''} pour correspondre aux ${participatingWords.length} mot${participatingWords.length > 1 ? 's' : ''} sélectionné${participatingWords.length > 1 ? 's' : ''}`
+        error: `Le mot mystère doit avoir ${participatingUnits.length} lettre${mysteryLetters.length > 1 ? 's' : ''} pour correspondre aux ${participatingUnits.length} ${unitDescription}`
       }
     }
 
@@ -128,13 +174,13 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
     const letterColorMap = new Map<string, string>()
     for (let i = 0; i < mysteryLetters.length; i++) {
       const letter = mysteryLetters[i]
-      const color = participatingWords[i].color
+      const color = participatingUnits[i].color
       
       if (letterColorMap.has(letter)) {
         if (letterColorMap.get(letter) !== color) {
           return {
             isValid: false,
-            error: `La lettre "${letter}" apparaît plusieurs fois mais avec des couleurs différentes. Assurez-vous que tous les mots correspondant à la même lettre aient la même couleur.`
+            error: `La lettre "${letter}" apparaît plusieurs fois mais avec des couleurs différentes. Assurez-vous que tous les mots/groupes correspondant à la même lettre aient la même couleur.`
           }
         }
       } else {
@@ -147,14 +193,15 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
 
   // Get mystery word preview with colors
   const getMysteryWordPreview = () => {
-    const participatingWords = getParticipatingWordsWithColors()
+    const participatingUnits = getParticipatingWordsWithColors()
     const mysteryLetters = formData.targetWord.toUpperCase().split('')
     
     return mysteryLetters.map((letter, index) => ({
       letter,
-      color: participatingWords[index]?.color || '#D1D5DB',
-      word: participatingWords[index]?.word || '',
-      isValid: index < participatingWords.length
+      color: participatingUnits[index]?.color || '#D1D5DB',
+      word: participatingUnits[index]?.word || '',
+      isValid: index < participatingUnits.length,
+      isGroup: participatingUnits[index]?.isGroup || false
     }))
   }
 
@@ -252,8 +299,13 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
                     >
                       {letterInfo.letter}
                     </div>
-                    <div className="text-xs text-gray-600 mt-1 max-w-12 truncate" title={letterInfo.word}>
-                      {letterInfo.isValid ? letterInfo.word : '?'}
+                    <div className="text-xs text-gray-600 mt-1 max-w-16 truncate" title={letterInfo.word}>
+                      {letterInfo.isValid ? (
+                        <span>
+                          {letterInfo.word}
+                          {letterInfo.isGroup && <span className="ml-1">👥</span>}
+                        </span>
+                      ) : '?'}
                     </div>
                   </div>
                 ))}
@@ -291,7 +343,10 @@ export default function GameCreator({ editingPoem, onCancel, onTestGame }: GameC
                           {letterInfo.letter}
                         </span>
                         <span>→</span>
-                        <span>{letterInfo.isValid ? letterInfo.word : 'Mot manquant'}</span>
+                        <span className="flex items-center space-x-1">
+                          <span>{letterInfo.isValid ? letterInfo.word : 'Unité manquante'}</span>
+                          {letterInfo.isGroup && <span>👥</span>}
+                        </span>
                       </div>
                     ))}
                   </div>
