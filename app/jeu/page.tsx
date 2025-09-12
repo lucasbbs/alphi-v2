@@ -37,6 +37,8 @@ interface Poem {
   wordGroups: WordGroup[]
   targetWord?: string
   targetWordGender?: 'masculin' | 'féminin'
+  gameParticipatingWords?: number[]
+  wordColors?: {[key: number]: string}
 }
 
 interface DroppedLetter {
@@ -135,9 +137,14 @@ export default function JeuPage() {
     setSelectedPoem(poem)
     // Garder les bonnes réponses pour vérification
     setCorrectAnswers([...poem.words])
-    // Vider les classes pour que l'utilisateur doive deviner
-    const emptyWords = poem.words.map(word => ({ ...word, class: '' }))
-    setGameWords(emptyWords)
+    
+    // Only include words that are marked as participating in the game
+    const participatingWords = poem.gameParticipatingWords || []
+    const gameWords = poem.words
+      .map((word, index) => participatingWords.includes(index) ? { ...word, class: '' } : null)
+      .filter((word): word is GameWord => word !== null)
+    
+    setGameWords(gameWords)
     setCurrentStep(2)
     
     // Démarrer le timer si ce n'est pas déjà fait
@@ -240,7 +247,25 @@ export default function JeuPage() {
   const handleWordClassAssignmentWithLives = (wordIndex: number, className: string) => {
     const updatedWords = [...gameWords]
     const previousClass = updatedWords[wordIndex].class
-    updatedWords[wordIndex].class = className
+    const gameWord = updatedWords[wordIndex]
+    
+    // Check if this word is part of a group
+    const group = gameWord.groupId ? selectedPoem?.wordGroups?.find(g => g.id === gameWord.groupId) : null;
+    
+    if (group) {
+      // Update class for all words in the group that are in gameWords
+      group.wordIndices.forEach(originalIndex => {
+        const participatingWords = selectedPoem?.gameParticipatingWords || [];
+        const gameWordIndex = participatingWords.findIndex(pIndex => pIndex === originalIndex);
+        if (gameWordIndex >= 0 && gameWordIndex < updatedWords.length) {
+          updatedWords[gameWordIndex].class = className;
+        }
+      });
+    } else {
+      // Individual word
+      updatedWords[wordIndex].class = className
+    }
+    
     setGameWords(updatedWords)
     
     // Vérifier si c'est la bonne réponse
@@ -444,8 +469,16 @@ export default function JeuPage() {
                   className="bg-gradient-to-br from-orange-200 to-pink-200 rounded-2xl p-6 cursor-pointer hover:scale-105 transition-transform duration-200 border-4 border-transparent hover:border-orange-400"
                   onClick={() => handlePoemSelection(poem)}
                 >
-                  <div className="aspect-video bg-orange-300 rounded-xl mb-4 flex items-center justify-center">
-                    <span className="text-6xl">🌅</span>
+                  <div className="aspect-video bg-orange-300 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
+                    {poem.image ? (
+                      <img 
+                        src={poem.image} 
+                        alt="Image du poème"
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    ) : (
+                      <span className="text-6xl">🌅</span>
+                    )}
                   </div>
                   <p className="text-gray-700 font-medium text-center">{poem.verse}</p>
                 </div>
@@ -463,14 +496,23 @@ export default function JeuPage() {
             <div className="bg-gray-50 rounded-2xl p-6 mb-8">
               <h3 className="font-semibold text-gray-800 mb-4">Vers sélectionné :</h3>
               <p className="text-lg text-gray-700">
-                {selectedPoem.verse.split(' ').map((word, index) => {
-                  const gameWord = gameWords.find(gw => gw.word === word.replace(/[.,!?]/g, ''))
-                  return gameWord ? (
-                    <span key={index} className="font-bold text-orange-600 mx-1">
-                      {word}
+                {selectedPoem.verse.split(' ').map((verseWord, verseIndex) => {
+                  // Check if this verse word corresponds to a participating word
+                  const participatingWords = selectedPoem.gameParticipatingWords || []
+                  const cleanVerseWord = verseWord.replace(/[.,!?]/g, '')
+                  
+                  // Check if any participating word matches this verse word
+                  const isParticipating = participatingWords.some(participatingIndex => {
+                    const originalWord = selectedPoem.words[participatingIndex]
+                    return originalWord && originalWord.word.toLowerCase() === cleanVerseWord.toLowerCase()
+                  })
+                  
+                  return isParticipating ? (
+                    <span key={verseIndex} className="font-bold text-orange-600 mx-1">
+                      {verseWord}
                     </span>
                   ) : (
-                    <span key={index} className="mx-1">{word}</span>
+                    <span key={verseIndex} className="mx-1">{verseWord}</span>
                   )
                 })}
               </p>
@@ -480,21 +522,71 @@ export default function JeuPage() {
               <div>
                 <h4 className="font-semibold text-gray-800 mb-4">Mots à classer :</h4>
                 <div className="space-y-3">
-                  {gameWords.map((gameWord, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-3">
-                      <div className="font-semibold text-gray-800">{gameWord.word}</div>
-                      <select 
-                        className="w-full mt-2 p-2 border border-gray-300 rounded-md"
-                        value={gameWord.class}
-                        onChange={(e) => handleWordClassAssignmentWithLives(index, e.target.value)}
-                      >
-                        <option value="">Choisir une classe...</option>
-                        {wordClasses.map((wc) => (
-                          <option key={wc.name} value={wc.name}>{wc.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
+                  {(() => {
+                    // Process words to handle groups properly
+                    const processedWords = [];
+                    const processedIndices = new Set();
+                    
+                    gameWords.forEach((gameWord, index) => {
+                      if (processedIndices.has(index)) return;
+                      
+                      // Check if this word is part of a group
+                      const group = gameWord.groupId ? selectedPoem.wordGroups?.find(g => g.id === gameWord.groupId) : null;
+                      
+                      if (group) {
+                        // Find all words in this group that are in gameWords
+                        const groupWordsInGame = group.wordIndices
+                          .map(originalIndex => {
+                            const participatingWords = selectedPoem.gameParticipatingWords || [];
+                            const gameWordIndex = participatingWords.findIndex(pIndex => pIndex === originalIndex);
+                            return gameWordIndex >= 0 ? gameWords[gameWordIndex] : null;
+                          })
+                          .filter(Boolean);
+                        
+                        if (groupWordsInGame.length > 0) {
+                          // Display as a group
+                          const groupText = groupWordsInGame.map(gw => gw.word).join(' ');
+                          processedWords.push({
+                            displayText: `${groupText} 👥`,
+                            gameWord: gameWord, // Use the first word for class assignment
+                            index: index,
+                            isGroup: true
+                          });
+                          
+                          // Mark all group members as processed
+                          groupWordsInGame.forEach(gw => {
+                            const idx = gameWords.findIndex(word => word === gw);
+                            if (idx >= 0) processedIndices.add(idx);
+                          });
+                        }
+                      } else {
+                        // Individual word
+                        processedWords.push({
+                          displayText: gameWord.word,
+                          gameWord: gameWord,
+                          index: index,
+                          isGroup: false
+                        });
+                        processedIndices.add(index);
+                      }
+                    });
+                    
+                    return processedWords.map((item, idx) => (
+                      <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                        <div className="font-semibold text-gray-800">{item.displayText}</div>
+                        <select 
+                          className="w-full mt-2 p-2 border border-gray-300 rounded-md"
+                          value={item.gameWord.class}
+                          onChange={(e) => handleWordClassAssignmentWithLives(item.index, e.target.value)}
+                        >
+                          <option value="">Choisir une classe...</option>
+                          {wordClasses.map((wc) => (
+                            <option key={wc.name} value={wc.name}>{wc.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
 
@@ -503,7 +595,6 @@ export default function JeuPage() {
                 <div className="space-y-2">
                   {wordClasses.map((wc) => (
                     <div key={wc.name} className="flex items-center">
-                      <div className={`w-4 h-4 rounded ${wc.color} mr-3`}></div>
                       <span className="text-gray-700">{wc.name}</span>
                     </div>
                   ))}
