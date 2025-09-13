@@ -242,13 +242,17 @@ export default function JeuPage() {
     // Create a mapping of letters to colors based on the target word
     const letterColorMap = new Map<string, string>();
     const targetWord = selectedPoem.targetWord || "";
-    
-    // Highlight each letter in the target word
-    targetWord.split("").forEach((letter) => {
-      // Use a bright green color to highlight target word letters
-      letterColorMap.set(letter.toUpperCase(), "#10B981");
-    });
 
+    // Highlight each letter in the target word
+    targetWord.split("").forEach((letter, index) => {
+      // Use a bright green color to highlight target word letters
+      letterColorMap.set(
+        letter.toUpperCase(),
+        (selectedPoem.wordColors &&
+          Object.values(selectedPoem.wordColors)[index]) ||
+          "",
+      );
+    });
     // Generate alphabet with the correct colors
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     const coloredAlphabet: DroppedLetter[] = alphabet.map((letter) => {
@@ -418,11 +422,14 @@ export default function JeuPage() {
         return;
       }
 
+      const userId = user?.id || "";
+
       await ProgressService.saveGameProgress(
         sessionToken,
         selectedPoem.id.toString(),
         sessionTime,
         finalScore,
+        userId,
       );
 
       console.log("Game progress saved successfully");

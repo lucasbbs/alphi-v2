@@ -36,15 +36,17 @@ export class ProgressService {
     sessionToken: string, 
     poemId: string, 
     timeTaken: number, 
-    score: number
+    score: number,
+    userId: string
   ): Promise<GameProgress | null> {
     try {
       const supabase = createClerkSupabaseClientFromHook(sessionToken)
       
-      const progressData: Omit<GameProgress, 'id' | 'user_id' | 'created_at'> = {
+      const progressData: Omit<GameProgress, 'id'  | 'created_at'> = {
         poem_id: poemId,
         time_taken: timeTaken,
         score: score,
+        user_id: userId,
         completed_at: new Date().toISOString()
       }
       
@@ -60,7 +62,7 @@ export class ProgressService {
       }
 
       // Update user stats after saving progress
-      await this.updateUserStats(sessionToken, poemId, timeTaken, score)
+      await this.updateUserStats(sessionToken, poemId, timeTaken, score, userId)
 
       return data
     } catch (error) {
@@ -115,7 +117,8 @@ export class ProgressService {
     sessionToken: string,
     poemId: string,
     timeTaken: number,
-    score: number
+    score: number,
+    userId: string
   ): Promise<void> {
     try {
       const supabase = createClerkSupabaseClientFromHook(sessionToken)
@@ -139,7 +142,8 @@ export class ProgressService {
             total_time_played: totalTime,
             average_score: Math.round(newAverageScore * 100) / 100, // Round to 2 decimal places
             best_score: newBestScore,
-            poems_completed: updatedPoemsCompleted
+            poems_completed: updatedPoemsCompleted,
+            user_id: userId
           })
           .eq('id', currentStats.id)
 
@@ -167,34 +171,4 @@ export class ProgressService {
     }
   }
 
-  // Migration helper: Convert localStorage game history to Supabase
-  static async migrateLegacyGameData(
-    sessionToken: string,
-    legacyGames: LegacyGameData[]
-  ): Promise<void> {
-    try {
-      const supabase = createClerkSupabaseClientFromHook(sessionToken)
-      
-      // For legacy data, we'll create a generic poem entry or skip if we can't map to existing poems
-      for (const game of legacyGames) {
-        // Try to find existing poem by verse content
-        const { data: existingPoems } = await supabase
-          .from('poems')
-          .select('id')
-          .eq('content', game.verse)
-          .limit(1)
-
-        if (existingPoems && existingPoems.length > 0) {
-          await this.saveGameProgress(
-            sessionToken,
-            existingPoems[0].id,
-            game.time,
-            game.score
-          )
-        }
-      }
-    } catch (error) {
-      console.error('Failed to migrate legacy game data:', error)
-    }
-  }
 }

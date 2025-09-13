@@ -36,19 +36,6 @@ export default function GameCreator({
     wordColors: editingPoem?.wordColors || {},
   });
 
-  useEffect(() => {
-    (async () => {
-      if (!session) return;
-      const sessionToken = await session.getToken({ template: "supabase" });
-      if (!sessionToken) {
-        toast.error("Erreur d'authentification");
-        return;
-      }
-
-      console.log(sessionToken);
-    })();
-  }, []);
-
   const handleSave = async () => {
     // Check if user is authenticated
     if (!session) {
@@ -91,8 +78,6 @@ export default function GameCreator({
         toast.error("Erreur d'authentification");
         return;
       }
-
-      console.log(sessionToken);
 
       const poem: Poem = {
         id: editingPoem?.id || `poem-${Date.now()}`,

@@ -15,7 +15,7 @@ export function transformSupabasePoem(supabasePoem: SupabasePoem): LocalPoem {
 
   return {
     id: supabasePoem.id,
-    image: null, // Images handled separately for now
+    image: supabasePoem.image, // Images handled separately for now
     verse: supabasePoem.content,
     words: supabasePoem.words || [], // Get words from Supabase
     wordGroups: localWordGroups,

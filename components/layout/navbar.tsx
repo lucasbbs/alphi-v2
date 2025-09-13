@@ -34,13 +34,13 @@ export default function NavBar() {
               <span>Jouer</span>
             </Link>
             <SignedIn>
-              <Link
+              {/* <Link
                 href="/admin"
                 className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
               >
                 <span>👩‍🏫</span>
                 <span>Administration</span>
-              </Link>
+              </Link> */}
               <Link
                 href="/progres"
                 className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"

@@ -3,6 +3,7 @@ export interface Poem {
   id: string
   title: string
   content: string
+  image: string | null
   verses: string[]
   target_word: string
   game_participating_words: number[]
