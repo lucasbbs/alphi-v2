@@ -10,6 +10,7 @@ import { Poem } from "@/lib/store/gameSlice";
 import toast from "react-hot-toast";
 import { Roles } from "types/globals";
 import { useRouter } from "next/navigation";
+import { PencilIcon, Trash2Icon, PlayIcon } from "lucide-react";
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
@@ -256,24 +257,27 @@ export default function AdminPage() {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleTestGame(poem)}
-                      className="rounded bg-blue-500 px-3 py-1 text-sm text-white transition-colors hover:bg-blue-600"
+                      className="rounded bg-blue-500 px-1 py-1  text-sm text-white transition-colors hover:bg-blue-600 sm:px-3"
                     >
-                      Tester
+                      <PlayIcon className="h-4 w-4" />
+                      <span className="hidden sm:block">Tester</span>
                     </button>
                     <button
                       onClick={() => {
                         setEditingPoem(poem);
                         setCurrentView("create-game");
                       }}
-                      className="rounded bg-gray-500 px-3 py-1 text-sm text-white transition-colors hover:bg-gray-600"
+                      className="rounded bg-gray-500 px-1 py-1  text-sm text-white transition-colors hover:bg-gray-600 sm:px-3 "
                     >
-                      Modifier
+                      <PencilIcon className="h-4 w-4" />
+                      <span className="hidden sm:block">Modifier</span>
                     </button>
                     <button
                       onClick={() => handleDeleteGame(poem)}
-                      className="rounded bg-red-500 px-3 py-1 text-sm text-white transition-colors hover:bg-red-600"
+                      className="rounded bg-red-500 px-1 py-1 text-sm text-white transition-colors hover:bg-red-600 sm:px-3"
                     >
-                      Supprimer
+                      <Trash2Icon className="h-4 w-4" />
+                      <span className="hidden sm:block">Supprimer</span>
                     </button>
                   </div>
                 </div>
