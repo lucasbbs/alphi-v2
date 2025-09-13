@@ -581,9 +581,6 @@ export default function JeuPage() {
                       <span className="text-6xl">🌅</span>
                     )}
                   </div>
-                  <p className="text-center font-medium text-gray-700">
-                    {poem.verse}
-                  </p>
                 </div>
               ))}
             </div>
