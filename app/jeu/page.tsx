@@ -239,29 +239,14 @@ export default function JeuPage() {
   const proceedToStep3 = () => {
     if (!selectedPoem) return;
 
-    // Create a mapping of letters to colors based on the participating gameWords (user-assigned classes)
-    // Priority: custom hex colors > class colors
+    // Create a mapping of letters to colors based on the target word
     const letterColorMap = new Map<string, string>();
-    console.log({ gameWords, availableLetters });
-    gameWords.forEach((gameWord, gameWordIndex) => {
-      console.log(gameWord, gameWordIndex);
-      const colorInfo = getWordColorAndLetter(gameWord, gameWordIndex);
-      if (colorInfo) {
-        const existingColor = letterColorMap.get(colorInfo.letter);
-
-        // Only overwrite if:
-        // 1. No existing color, OR
-        // 2. New color is hex and existing is not hex, OR
-        // 3. Both are hex (later overwrites)
-        // This prioritizes custom colors over class colors
-        if (
-          !existingColor ||
-          (colorInfo.color.startsWith("#") && !existingColor.startsWith("#")) ||
-          (colorInfo.color.startsWith("#") && existingColor.startsWith("#"))
-        ) {
-          letterColorMap.set(colorInfo.letter, colorInfo.color);
-        }
-      }
+    const targetWord = selectedPoem.targetWord || "";
+    
+    // Highlight each letter in the target word
+    targetWord.split("").forEach((letter) => {
+      // Use a bright green color to highlight target word letters
+      letterColorMap.set(letter.toUpperCase(), "#10B981");
     });
 
     // Generate alphabet with the correct colors
