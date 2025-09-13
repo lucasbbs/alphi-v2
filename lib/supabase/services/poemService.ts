@@ -9,7 +9,8 @@ export function transformSupabasePoem(supabasePoem: SupabasePoem): LocalPoem {
         id: group.id || `group-${Math.random()}`,
         name: group.name || 'Group',
         color: group.color || '#EF4444',
-        wordIndices: group.word_indices || group.wordIndices || []
+        wordIndices: group.word_indices || group.wordIndices || [],
+        image: group.image || null
       }))
     : []
 
@@ -34,7 +35,8 @@ export function transformLocalPoem(localPoem: LocalPoem): Partial<SupabasePoem> 
     id: group.id,
     name: group.name,
     color: group.color,
-    word_indices: group.wordIndices
+    word_indices: group.wordIndices,
+    image: group.image
   }))
 
   return {
@@ -47,7 +49,8 @@ export function transformLocalPoem(localPoem: LocalPoem): Partial<SupabasePoem> 
     game_participating_words: localPoem.gameParticipatingWords || [],
     word_groups: supabaseWordGroups as any,
     word_colors: localPoem.wordColors || {},
-    difficulty_level: 'medium' // Default difficulty
+    difficulty_level: 'medium',
+    image: localPoem.image
   }
 }
 
@@ -77,6 +80,7 @@ export interface LocalWordGroup {
   name: string
   color: string
   wordIndices: number[]
+  image: string | null
 }
 
 export class PoemService {

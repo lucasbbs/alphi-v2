@@ -33,7 +33,8 @@ const getDefaultPoems = (): Poem[] => [
         id: 'verbe-groupe-1',
         name: 'Groupe verbal',
         color: '#10B981',
-        wordIndices: [2, 3]
+        wordIndices: [2, 3],
+        image: null
       }
     ],
     targetWord: 'HORAIRE',

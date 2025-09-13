@@ -81,25 +81,26 @@ export default function GameCreator({
 
       // Upload image to imgbb if there's an image
       let imageUrl = formData.image;
-      if (formData.image && formData.image.startsWith('data:')) {
+      if (formData.image && formData.image.startsWith("data:")) {
         toast("Upload de l'image en cours...", { icon: "📤" });
-        
+
         try {
-          const response = await fetch('/api/upload-image', {
-            method: 'POST',
+          const response = await fetch("/api/upload-image", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
               image: formData.image,
-              expiration: 0 // No expiration for saved images
+              expiration: 0, // No expiration for saved images
             }),
           });
-          
+
           const result = await response.json();
-          
+
           if (result.success) {
             imageUrl = result.data.display_url; // Use display_url as requested
+            console.log(imageUrl);
             toast.success("Image uploadée avec succès!");
           } else {
             toast.error(`Erreur d'upload: ${result.error}`);
@@ -107,7 +108,7 @@ export default function GameCreator({
             imageUrl = null;
           }
         } catch (imageError) {
-          console.error('Image upload error:', imageError);
+          console.error("Image upload error:", imageError);
           toast.error("Erreur lors de l'upload de l'image");
           // Continue saving without image
           imageUrl = null;
