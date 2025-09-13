@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useUser, useSession } from '@clerk/nextjs'
 import { useSelector, useDispatch } from 'react-redux'
-import { RootState } from '@/lib/store'
+import { RootState, AppDispatch } from '@/lib/store'
 import { deletePoem } from '@/lib/store/gameSlice'
 import GameCreator from '@/components/admin/GameCreator'
 import { Poem } from '@/lib/store/gameSlice'
@@ -11,7 +11,8 @@ import toast from 'react-hot-toast'
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser()
-  const dispatch = useDispatch()
+  const { session } = useSession()
+  const dispatch = useDispatch<AppDispatch>()
   const poems = useSelector((state: RootState) => state.game.poems)
   const [currentView, setCurrentView] = useState<'dashboard' | 'create-game'>('dashboard')
   const [editingPoem, setEditingPoem] = useState<Poem | null>(null)
@@ -54,10 +55,26 @@ export default function AdminPage() {
     setEditingPoem(null)
   }
 
-  const handleDeleteGame = (poem: Poem) => {
+  const handleDeleteGame = async (poem: Poem) => {
     if (confirm(`Êtes-vous sûr de vouloir supprimer le jeu "${poem.verse.substring(0, 50)}..." ?`)) {
-      dispatch(deletePoem(poem.id))
-      toast.success('Jeu supprimé avec succès!')
+      try {
+        if (!session) {
+          toast.error('Session non disponible')
+          return
+        }
+        
+        const sessionToken = await session.getToken({ template: 'supabase' })
+        if (!sessionToken) {
+          toast.error('Token de session non disponible')
+          return
+        }
+        
+        await dispatch(deletePoem({ sessionToken, poemId: poem.id }))
+        toast.success('Jeu supprimé avec succès!')
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error)
+        toast.error('Erreur lors de la suppression du jeu')
+      }
     }
   }
 
