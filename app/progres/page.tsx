@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useUser, useSession } from '@clerk/nextjs'
 import { TrendingUp, Clock, Trophy, Target, Calendar, BarChart3 } from 'lucide-react'
+import { ProgressService, GameProgress, GameStats } from '@/lib/supabase/services/progressService'
 
 interface GameData {
   date: string
@@ -14,7 +15,9 @@ interface GameData {
 
 export default function ProgresPage() {
   const { user } = useUser()
+  const { session } = useSession()
   const [gameHistory, setGameHistory] = useState<GameData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState({
     totalGames: 0,
     averageScore: 0,
@@ -24,26 +27,67 @@ export default function ProgresPage() {
   })
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedGames = JSON.parse(localStorage.getItem('alphi-games') || '[]')
-      setGameHistory(savedGames)
+    const fetchUserData = async () => {
+      if (!session) return
       
-      // Calculer les statistiques
-      if (savedGames.length > 0) {
-        const totalScore = savedGames.reduce((sum: number, game: GameData) => sum + game.score, 0)
-        const totalTime = savedGames.reduce((sum: number, game: GameData) => sum + game.time, 0)
-        const perfectGames = savedGames.filter((game: GameData) => game.lives === 3).length
+      try {
+        setIsLoading(true)
+        const sessionToken = await session.getToken({ template: 'supabase' })
         
-        setStats({
-          totalGames: savedGames.length,
-          averageScore: Math.round(totalScore / savedGames.length),
-          averageTime: Math.round(totalTime / savedGames.length),
-          highestScore: Math.max(...savedGames.map((game: GameData) => game.score)),
-          perfectGames
-        })
+        if (!sessionToken) {
+          console.error('No session token available')
+          return
+        }
+        
+        // Fetch both stats and progress from Supabase
+        const [userStats, userProgress] = await Promise.all([
+          ProgressService.getUserStats(sessionToken),
+          ProgressService.getUserProgress(sessionToken)
+        ])
+        
+        // Transform progress data to match GameData format
+        const transformedHistory: GameData[] = userProgress.map((progress: GameProgress) => ({
+          date: progress.completed_at || new Date().toISOString(),
+          score: progress.score,
+          time: progress.time_taken,
+          verse: `Poem ${progress.poem_id.substring(0, 8)}...`, // Short poem ID reference
+          lives: progress.score >= 90 ? 3 : progress.score >= 60 ? 2 : 1 // Estimate lives based on score
+        }))
+        
+        setGameHistory(transformedHistory)
+        
+        // Use Supabase stats if available, otherwise calculate from progress
+        if (userStats) {
+          setStats({
+            totalGames: userStats.total_games_played,
+            averageScore: Math.round(userStats.average_score),
+            averageTime: Math.round(userStats.total_time_played / userStats.total_games_played),
+            highestScore: userStats.best_score,
+            perfectGames: transformedHistory.filter(game => game.lives === 3).length
+          })
+        } else if (transformedHistory.length > 0) {
+          // Fallback: calculate stats from progress data
+          const totalScore = transformedHistory.reduce((sum, game) => sum + game.score, 0)
+          const totalTime = transformedHistory.reduce((sum, game) => sum + game.time, 0)
+          const perfectGames = transformedHistory.filter(game => game.lives === 3).length
+          
+          setStats({
+            totalGames: transformedHistory.length,
+            averageScore: Math.round(totalScore / transformedHistory.length),
+            averageTime: Math.round(totalTime / transformedHistory.length),
+            highestScore: Math.max(...transformedHistory.map(game => game.score)),
+            perfectGames
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
-  }, [])
+    
+    fetchUserData()
+  }, [session])
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60)
@@ -62,9 +106,10 @@ export default function ProgresPage() {
     })
   }
 
-  const clearHistory = () => {
+  const clearHistory = async () => {
     if (confirm('Êtes-vous sûr de vouloir effacer tout votre historique ?')) {
-      localStorage.removeItem('alphi-games')
+      // Note: This would require implementing a clear function in ProgressService
+      // For now, just reset the local state
       setGameHistory([])
       setStats({
         totalGames: 0,
@@ -82,6 +127,18 @@ export default function ProgresPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Connectez-vous pour voir vos progrès !</h1>
           <p className="text-gray-600">Vous devez être connecté pour accéder à votre historique.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📊</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Chargement de vos progrès...</h1>
+          <p className="text-gray-600">Récupération de vos données depuis la base de données</p>
         </div>
       </div>
     )
