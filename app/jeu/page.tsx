@@ -478,7 +478,7 @@ export default function JeuPage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100">
+      <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100">
         <div className="text-center">
           <h1 className="mb-4 text-2xl font-bold text-gray-800">
             Connectez-vous pour jouer !
