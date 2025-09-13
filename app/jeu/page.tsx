@@ -131,13 +131,13 @@ export default function JeuPage() {
     const loadPoems = async () => {
       if (session && user) {
         try {
-          const sessionToken = await session.getToken({ template: 'supabase' });
+          const sessionToken = await session.getToken({ template: "supabase" });
           if (sessionToken) {
             dispatch(fetchPoems(sessionToken));
           }
         } catch (error) {
-          console.error('Error fetching poems:', error);
-          toast.error('Erreur lors du chargement des poèmes');
+          console.error("Error fetching poems:", error);
+          toast.error("Erreur lors du chargement des poèmes");
         }
       }
     };
@@ -196,12 +196,6 @@ export default function JeuPage() {
     }
   };
 
-  const handleWordClassAssignment = (wordIndex: number, className: string) => {
-    const updatedWords = [...gameWords];
-    updatedWords[wordIndex].class = className;
-    setGameWords(updatedWords);
-  };
-
   const getWordColorAndLetter = (word: GameWord, wordIndex: number) => {
     if (!selectedPoem) return null;
 
@@ -248,8 +242,9 @@ export default function JeuPage() {
     // Create a mapping of letters to colors based on the participating gameWords (user-assigned classes)
     // Priority: custom hex colors > class colors
     const letterColorMap = new Map<string, string>();
-
+    console.log({ gameWords, availableLetters });
     gameWords.forEach((gameWord, gameWordIndex) => {
+      console.log(gameWord, gameWordIndex);
       const colorInfo = getWordColorAndLetter(gameWord, gameWordIndex);
       if (colorInfo) {
         const existingColor = letterColorMap.get(colorInfo.letter);
@@ -432,9 +427,9 @@ export default function JeuPage() {
     if (!session || !selectedPoem) return;
 
     try {
-      const sessionToken = await session.getToken({ template: 'supabase' });
+      const sessionToken = await session.getToken({ template: "supabase" });
       if (!sessionToken) {
-        console.error('No session token available');
+        console.error("No session token available");
         return;
       }
 
@@ -442,12 +437,12 @@ export default function JeuPage() {
         sessionToken,
         selectedPoem.id.toString(),
         sessionTime,
-        finalScore
+        finalScore,
       );
 
-      console.log('Game progress saved successfully');
+      console.log("Game progress saved successfully");
     } catch (error) {
-      console.error('Failed to save game progress:', error);
+      console.error("Failed to save game progress:", error);
       // Fallback to localStorage if Supabase fails
       const gameData = {
         date: new Date().toISOString(),
