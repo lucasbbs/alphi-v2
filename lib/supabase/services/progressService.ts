@@ -8,6 +8,7 @@ export interface GameProgress {
   time_taken: number // in seconds
   score: number
   created_at?: string
+  remaining_lives: number
 }
 
 export interface GameStats {
@@ -37,7 +38,8 @@ export class ProgressService {
     poemId: string, 
     timeTaken: number, 
     score: number,
-    userId: string
+    userId: string,
+    remaining_lives: number
   ): Promise<GameProgress | null> {
     try {
       const supabase = createClerkSupabaseClientFromHook(sessionToken)
@@ -47,7 +49,8 @@ export class ProgressService {
         time_taken: timeTaken,
         score: score,
         user_id: userId,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
+        remaining_lives: remaining_lives
       }
       
       const { data, error } = await supabase

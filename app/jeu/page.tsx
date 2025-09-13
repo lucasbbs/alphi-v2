@@ -430,6 +430,7 @@ export default function JeuPage() {
         sessionTime,
         finalScore,
         userId,
+        lives,
       );
 
       console.log("Game progress saved successfully");

@@ -13,8 +13,8 @@ import {
 import {
   ProgressService,
   GameProgress,
-  GameStats,
 } from "@/lib/supabase/services/progressService";
+import { PoemService } from "@/lib/supabase/services/poemService";
 
 interface GameData {
   date: string;
@@ -22,6 +22,7 @@ interface GameData {
   lives: number;
   time: number;
   verse: string;
+  remaining_lives: number;
 }
 
 export default function ProgresPage() {
@@ -51,9 +52,10 @@ export default function ProgresPage() {
         }
 
         // Fetch both stats and progress from Supabase
-        const [userStats, userProgress] = await Promise.all([
+        const [userStats, userProgress, poems] = await Promise.all([
           ProgressService.getUserStats(sessionToken),
           ProgressService.getUserProgress(sessionToken),
+          PoemService.fetchPoems(sessionToken),
         ]);
 
         // Transform progress data to match GameData format
@@ -62,8 +64,9 @@ export default function ProgresPage() {
             date: progress.completed_at || new Date().toISOString(),
             score: progress.score,
             time: progress.time_taken,
-            verse: `Poem ${progress.poem_id.substring(0, 8)}...`, // Short poem ID reference
-            lives: progress.score >= 90 ? 3 : progress.score >= 60 ? 2 : 1, // Estimate lives based on score
+            verse: poems.find((p) => p.id === progress.poem_id)?.verse ?? "",
+            lives: progress.score >= 90 ? 3 : progress.score >= 60 ? 2 : 1,
+            remaining_lives: progress.remaining_lives,
           }),
         );
 
@@ -164,7 +167,7 @@ export default function ProgresPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100">
+      <div className="flex h-screen !w-screen items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100">
         <div className="text-center">
           <div className="mb-4 text-4xl">📊</div>
           <h1 className="mb-4 text-2xl font-bold text-gray-800">
@@ -303,9 +306,9 @@ export default function ProgresPage() {
                     <div
                       key={index}
                       className={`rounded-xl border-l-4 p-4 ${
-                        game.lives === 3
+                        game.remaining_lives === 3
                           ? "border-green-500 bg-green-50"
-                          : game.lives >= 2
+                          : game.remaining_lives >= 2
                           ? "border-yellow-500 bg-yellow-50"
                           : "border-red-500 bg-red-50"
                       }`}
@@ -322,18 +325,20 @@ export default function ProgresPage() {
                             </span>
                             <span className="text-sm text-gray-600">
                               Vies:{" "}
-                              {Array.from({ length: 3 }).map((_, i) => (
-                                <span
-                                  key={i}
-                                  className={
-                                    i < game.lives
-                                      ? "text-red-500"
-                                      : "text-gray-300"
-                                  }
-                                >
-                                  ❤️
-                                </span>
-                              ))}
+                              {Array.from({ length: game.remaining_lives }).map(
+                                (_, i) => (
+                                  <span
+                                    key={i}
+                                    className={
+                                      i < game.lives
+                                        ? "text-red-500"
+                                        : "text-gray-300"
+                                    }
+                                  >
+                                    ❤️
+                                  </span>
+                                ),
+                              )}
                             </span>
                           </div>
                           <p className="mb-1 text-sm text-gray-600">
@@ -344,7 +349,7 @@ export default function ProgresPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          {game.lives === 3 && (
+                          {game.remaining_lives === 3 && (
                             <div className="rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white">
                               ⭐ PARFAIT
                             </div>
