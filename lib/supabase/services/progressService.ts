@@ -155,6 +155,7 @@ export class ProgressService {
         const { error } = await supabase
           .from('user_stats')
           .insert([{
+            user_id: userId,
             total_games_played: 1,
             total_time_played: timeTaken,
             average_score: score,
