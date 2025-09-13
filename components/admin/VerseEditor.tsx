@@ -347,6 +347,7 @@ export default function VerseEditor({
       name: newGroupName,
       color: newGroupColor,
       wordIndices: selectedWordIndices,
+      image: null,
     };
 
     // Update words to include group ID
