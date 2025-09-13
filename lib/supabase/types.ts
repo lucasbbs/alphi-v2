@@ -1,3 +1,5 @@
+import { GameWord } from "./services/poemService"
+
 // Database types for the educational app
 export interface Poem {
   id: string
@@ -5,7 +7,9 @@ export interface Poem {
   content: string
   image: string | null
   verses: string[]
+  words: GameWord[]
   target_word: string
+  target_word_gender: 'masculin' | 'féminin'
   game_participating_words: number[]
   word_groups?: WordGroup[]
   word_colors?: Record<number, string>
