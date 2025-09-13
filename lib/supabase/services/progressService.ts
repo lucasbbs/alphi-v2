@@ -130,7 +130,7 @@ export class ProgressService {
         // Update existing stats
         const totalGames = currentStats.total_games_played + 1
         const totalTime = currentStats.total_time_played + timeTaken
-        const newAverageScore = ((currentStats.average_score * currentStats.total_games_played) + score) / totalGames
+        const newAverageScore = Math.round((((currentStats.average_score * currentStats.total_games_played) + score) / totalGames*100))
         const newBestScore = Math.max(currentStats.best_score, score)
         
         const updatedPoemsCompleted = Array.from(new Set([...currentStats.poems_completed, poemId]))

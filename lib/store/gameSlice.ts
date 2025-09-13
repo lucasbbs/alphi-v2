@@ -16,7 +16,7 @@ interface GameState {
 const getDefaultPoems = (): Poem[] => [
   {
     id: 'default-1',
-    image: '/logo.png',
+    image: '',
     verse: 'Demain, l\'hiver viendra poser sa main froide sur nos rêves.',
     words: [
       { word: 'Demain', class: 'adverbe', isSelected: false },
