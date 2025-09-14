@@ -74,13 +74,14 @@ export class ProgressService {
     }
   }
 
-  static async getUserProgress(sessionToken: string): Promise<GameProgress[]> {
+  static async getUserProgress(sessionToken: string, user_id: string): Promise<GameProgress[]> {
     try {
       const supabase = createClerkSupabaseClientFromHook(sessionToken)
       
       const { data, error } = await supabase
         .from('user_progress')
         .select('*')
+        .eq('user_id', user_id)
         .order('completed_at', { ascending: false })
 
       if (error) {
@@ -95,13 +96,14 @@ export class ProgressService {
     }
   }
 
-  static async getUserStats(sessionToken: string): Promise<GameStats | null> {
+  static async getUserStats(sessionToken: string, user_id: string): Promise<GameStats | null> {
     try {
       const supabase = createClerkSupabaseClientFromHook(sessionToken)
       
       const { data, error } = await supabase
         .from('user_stats')
         .select('*')
+        .eq('user_id', user_id) // Filter by user_id
         .single()
 
       if (error && error.code !== 'PGRST116') { // Not found error
@@ -127,7 +129,7 @@ export class ProgressService {
       const supabase = createClerkSupabaseClientFromHook(sessionToken)
       
       // Get current stats
-      const currentStats = await this.getUserStats(sessionToken)
+      const currentStats = await this.getUserStats(sessionToken, userId)
       
       if (currentStats) {
         // Update existing stats
@@ -161,7 +163,7 @@ export class ProgressService {
             user_id: userId,
             total_games_played: 1,
             total_time_played: timeTaken,
-            average_score: score,
+            average_score: score*100,
             best_score: score,
             poems_completed: [poemId]
           }])

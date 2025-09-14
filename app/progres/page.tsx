@@ -53,8 +53,8 @@ export default function ProgresPage() {
 
         // Fetch both stats and progress from Supabase
         const [userStats, userProgress, poems] = await Promise.all([
-          ProgressService.getUserStats(sessionToken),
-          ProgressService.getUserProgress(sessionToken),
+          ProgressService.getUserStats(sessionToken, user!.id),
+          ProgressService.getUserProgress(sessionToken, user!.id),
           PoemService.fetchPoems(sessionToken),
         ]);
 
