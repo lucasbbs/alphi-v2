@@ -81,8 +81,9 @@ export default function ProgresPage() {
               userStats.total_time_played / userStats.total_games_played,
             ),
             highestScore: userStats.best_score,
-            perfectGames: transformedHistory.filter((game) => game.lives === 3)
-              .length,
+            perfectGames: transformedHistory.filter(
+              (game) => game.remaining_lives === 3,
+            ).length,
           });
         } else if (transformedHistory.length > 0) {
           // Fallback: calculate stats from progress data
@@ -95,7 +96,7 @@ export default function ProgresPage() {
             0,
           );
           const perfectGames = transformedHistory.filter(
-            (game) => game.lives === 3,
+            (game) => game.remaining_lives === 3,
           ).length;
 
           setStats({
