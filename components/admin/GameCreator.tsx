@@ -9,6 +9,7 @@ import ImageDropzone from "./ImageDropzone";
 import VerseEditor from "./VerseEditor";
 import { Save, Play, ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
+import { normalizeForComparison } from "@/lib/utils/textNormalization";
 
 interface GameCreatorProps {
   editingPoem?: Poem | null;
@@ -225,7 +226,8 @@ export default function GameCreator({
   // Validate mystery word against participating units
   const validateMysteryWord = () => {
     const participatingUnits = getParticipatingWordsWithColors();
-    const mysteryLetters = formData.targetWord.toUpperCase().split("");
+    // Normalize the target word before splitting to handle accented characters
+    const mysteryLetters = normalizeForComparison(formData.targetWord).split("");
 
     // Validation 1: Number of letters should match number of participating units (words/groups)
     if (mysteryLetters.length !== participatingUnits.length) {
@@ -267,10 +269,12 @@ export default function GameCreator({
   // Get mystery word preview with colors
   const getMysteryWordPreview = () => {
     const participatingUnits = getParticipatingWordsWithColors();
-    const mysteryLetters = formData.targetWord.toUpperCase().split("");
+    // Use both original (for display) and normalized (for mapping) versions
+    const originalLetters = formData.targetWord.toUpperCase().split("");
+    const normalizedLetters = normalizeForComparison(formData.targetWord).split("");
 
-    return mysteryLetters.map((letter, index) => ({
-      letter,
+    return originalLetters.map((letter, index) => ({
+      letter, // Display the original letter with accents
       color: participatingUnits[index]?.color || "#D1D5DB",
       word: participatingUnits[index]?.word || "",
       isValid: index < participatingUnits.length,

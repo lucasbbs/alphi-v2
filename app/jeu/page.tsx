@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import { Clock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { WordClassesService } from "@/lib/supabase/services/wordClassesServices";
+import { normalizeForComparison } from "@/lib/utils/textNormalization";
 
 // Types pour le jeu
 interface WordClass {
@@ -357,7 +358,8 @@ export default function JeuPage() {
     const formedWord = droppedLetters.map((l) => l.letter).join("");
     const targetWord = selectedPoem?.targetWord || "HORAIRE";
 
-    if (formedWord === targetWord) {
+    // Compare using normalized versions to handle accented characters
+    if (normalizeForComparison(formedWord) === normalizeForComparison(targetWord)) {
       setFoundWord(formedWord);
       setCurrentStep(4);
     } else {

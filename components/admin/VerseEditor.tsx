@@ -72,7 +72,8 @@ export default function VerseEditor({
 
   // Fonction d'attribution automatique des classes grammaticales
   const autoClassifyWord = (word: string): string => {
-    const cleanWord = word.toLowerCase().replace(/['']/g, "'");
+    // Use normalized version for classification logic, then clean apostrophes
+    const cleanWord = normalizeAccents(word).toLowerCase().replace(/['']/g, "'");
 
     // Déterminants définis
     if (
