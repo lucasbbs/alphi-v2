@@ -47,6 +47,11 @@ Required for authentication:
 - **Dependencies**: All packages installed and up to date
 - **Configuration**: Next.js configured for Replit hosting
 - **Deployment**: Production deployment settings configured
+- **Accent Handling** (Today): Implemented comprehensive French accent normalization system
+  - Created textNormalization utility for handling accented characters (é → e, à → a, etc.)
+  - Fixed Step 3 letter coloring to properly handle accented target words like "pétale"
+  - Updated VerseEditor auto-classification to normalize all accented word lists
+  - Game logic now uses normalized comparisons while preserving original spelling for display
 
 ## User Preferences
 - Package manager: pnpm (as specified in project)
