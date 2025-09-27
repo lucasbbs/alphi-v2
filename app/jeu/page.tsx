@@ -244,9 +244,10 @@ export default function JeuPage() {
     const letterColorMap = new Map<string, string>();
     const targetWord = selectedPoem.targetWord || "";
 
-    // Highlight each letter in the target word
-    targetWord.split("").forEach((letter, index) => {
-      // Use a bright green color to highlight target word letters
+    // Normalize target word and highlight each letter 
+    const normalizedTargetWord = normalizeForComparison(targetWord);
+    normalizedTargetWord.split("").forEach((letter, index) => {
+      // Use a bright green color to highlight target word letters (normalized letter)
       letterColorMap.set(
         letter.toUpperCase(),
         (selectedPoem.wordColors &&

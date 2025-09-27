@@ -108,7 +108,7 @@ export default function VerseEditor({
     // Prépositions communes
     if (
       [
-        "à",
+        "a", // normalized from "à"
         "de",
         "dans",
         "sur",
@@ -180,7 +180,7 @@ export default function VerseEditor({
     // Adverbes fréquents
     if (
       [
-        "très",
+        "tres", // normalized from "très"
         "bien",
         "mal",
         "plus",
@@ -190,7 +190,7 @@ export default function VerseEditor({
         "trop",
         "assez",
         "encore",
-        "déjà",
+        "deja", // normalized from "déjà"
         "jamais",
         "toujours",
         "souvent",
