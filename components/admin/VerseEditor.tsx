@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { GameWord, WordGroup } from "@/lib/store/gameSlice";
+import { normalizeAccents } from "@/lib/utils/textNormalization";
 
 interface VerseEditorProps {
   verse: string;
