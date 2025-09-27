@@ -268,11 +268,14 @@ export default function VerseEditor({
         );
 
       const newWords: GameWord[] = wordTokens.map((word, index) => {
-        const existingWord = words.find((w) => w.word === word);
+        // Find existing word by comparing both original and normalized versions
+        const existingWord = words.find((w) => 
+          w.word === word || normalizeAccents(w.word) === normalizeAccents(word)
+        );
         return (
           existingWord || {
-            word,
-            class: autoClassifyWord(word), // Attribution automatique
+            word, // Keep original word with accents for display
+            class: autoClassifyWord(word), // Attribution automatique using normalized version
             isSelected: false,
           }
         );
