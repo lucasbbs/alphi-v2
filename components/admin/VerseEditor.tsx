@@ -150,7 +150,7 @@ export default function VerseEditor({
         "qui",
         "que",
         "dont",
-        "où",
+        "ou", // normalized from "où"
       ].includes(cleanWord)
     ) {
       return "pronom";
@@ -199,9 +199,9 @@ export default function VerseEditor({
         "aujourd'hui",
         "demain",
         "maintenant",
-        "bientôt",
+        "bientot", // normalized from "bientôt"
         "tard",
-        "tôt",
+        "tot", // normalized from "tôt"
       ].includes(cleanWord)
     ) {
       return "adverbe";
@@ -212,10 +212,10 @@ export default function VerseEditor({
       cleanWord.match(/(er|ir|re|oir)$/) ||
       [
         "est",
-        "était",
+        "etait", // normalized from "était"
         "sera",
         "avoir",
-        "être",
+        "etre", // normalized from "être"
         "faire",
         "aller",
         "venir",
