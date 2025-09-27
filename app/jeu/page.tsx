@@ -596,7 +596,7 @@ export default function JeuPage() {
             </h2>
             <div className="mb-8 rounded-2xl bg-gray-50 p-6">
               <h3 className="mb-4 font-semibold text-gray-800">
-                Vers sélectionné :
+                Vers ou poème sélectionné :
               </h3>
               <p className="text-lg text-gray-700">
                 {(() => {
