@@ -82,7 +82,7 @@ export default function Home() {
           <Card
             key={title}
             title={title}
-            className="px-2"
+            className="px-2 !text-inherit"
             description={description}
             demo={demo}
             large={large}
