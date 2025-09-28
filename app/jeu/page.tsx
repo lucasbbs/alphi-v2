@@ -244,7 +244,7 @@ export default function JeuPage() {
     const letterColorMap = new Map<string, string>();
     const targetWord = selectedPoem.targetWord || "";
 
-    // Normalize target word and highlight each letter 
+    // Normalize target word and highlight each letter
     const normalizedTargetWord = normalizeForComparison(targetWord);
     normalizedTargetWord.split("").forEach((letter, index) => {
       // Use a bright green color to highlight target word letters (normalized letter)
@@ -340,7 +340,7 @@ export default function JeuPage() {
       toast.error("Erreur: Aucun poème sélectionné ou mot mystère manquant");
       return;
     }
-    
+
     const targetWord = selectedPoem.targetWord;
     const maxLetters = targetWord.length;
 
@@ -363,17 +363,19 @@ export default function JeuPage() {
 
   const checkWordInStep3 = () => {
     const formedWord = droppedLetters.map((l) => l.letter).join("");
-    
+
     // Ensure we have a valid selected poem with target word
     if (!selectedPoem || !selectedPoem.targetWord) {
       toast.error("Erreur: Aucun poème sélectionné ou mot mystère manquant");
       return;
     }
-    
+
     const targetWord = selectedPoem.targetWord;
 
     // Compare using normalized versions to handle accented characters
-    if (normalizeForComparison(formedWord) === normalizeForComparison(targetWord)) {
+    if (
+      normalizeForComparison(formedWord) === normalizeForComparison(targetWord)
+    ) {
       setFoundWord(formedWord);
       setCurrentStep(4);
     } else {
@@ -386,40 +388,40 @@ export default function JeuPage() {
 
   const handleGenderSelection = (gender: string) => {
     if (gameOver || selectedGender) return; // Empêcher multiples sélections
-    
+
     // Ensure we have a valid selected poem with all required data
-    if (!selectedPoem || !selectedPoem.targetWord || !selectedPoem.targetWordGender) {
+    if (
+      !selectedPoem ||
+      !selectedPoem.targetWord ||
+      !selectedPoem.targetWordGender
+    ) {
       toast.error("Erreur: Données du poème manquantes (mot mystère ou genre)");
       return;
     }
-    
+
     setSelectedGender(gender);
 
     const correctGender = selectedPoem.targetWordGender;
     const targetWord = selectedPoem.targetWord;
-    
-    // Debug logging to verify correct values are being used
-    console.log('Gender Selection Debug:', {
-      selectedPoem: selectedPoem,
-      targetWord: targetWord,
-      targetWordGender: selectedPoem.targetWordGender,
-      correctGender: correctGender,
-      selectedGender: gender
-    });
 
     if (gender !== correctGender) {
       loseLife();
-      toast.error(`❌ Incorrect! Le mot "${targetWord}" est ${correctGender}.`, {
-        duration: 3000,
-      });
+      toast.error(
+        `❌ Incorrect! Le mot "${targetWord}" est ${correctGender}.`,
+        {
+          duration: 3000,
+        },
+      );
     } else {
-      // Jeu terminé avec succès - calculer et enregistrer le score
       const finalScore = calculateScore();
       setGameScore(finalScore);
       setGameOver(true); // Arrêter le timer
-      toast.success(`🎉 Correct! Le mot "${targetWord}" est bien ${correctGender}. Score: ${finalScore} points`, {
-        duration: 4000,
-      });
+      toast.success(
+        `🎉 Correct! Le mot "${targetWord}" est bien ${correctGender}. Score: ${finalScore} points`,
+        {
+          duration: 4000,
+        },
+      );
 
       // Sauvegarder le progrès dans Supabase
       saveGameProgress(finalScore);
@@ -1133,23 +1135,35 @@ export default function JeuPage() {
             {selectedGender && (
               <div
                 className={`rounded-2xl p-6 text-center ${
-                  selectedGender === "masculin"
+                  selectedGender === selectedPoem?.targetWordGender
                     ? "bg-gradient-to-r from-green-100 to-teal-100"
                     : "bg-gradient-to-r from-red-100 to-pink-100"
                 }`}
               >
                 <div className="mb-4 text-4xl">
-                  {selectedGender === "masculin" ? "🎉" : "❌"}
+                  {selectedGender === selectedPoem?.targetWordGender
+                    ? "🎉"
+                    : "❌"}
                 </div>
                 <h3 className="mb-2 text-2xl font-bold text-gray-800">
-                  {selectedGender === "masculin"
+                  {selectedGender === selectedPoem?.targetWordGender
                     ? "Bravo !"
                     : "Pas tout à fait..."}
                 </h3>
                 <p className="mb-4 text-gray-600">
-                  {selectedGender === "masculin"
-                    ? `Excellent ! Le mot "horaire" est effectivement masculin. On dit "un horaire".`
-                    : `Le mot "horaire" est masculin, pas féminin. On dit "un horaire", pas "une horaire". Par exemple : "Mon horaire de travail commence à 9h."`}
+                  {selectedGender === selectedPoem?.targetWordGender
+                    ? `Excellent ! Le mot "${selectedPoem.targetWord}" est effectivement ${selectedPoem?.targetWordGender}. On dit "un ${selectedPoem.targetWord}".`
+                    : `Le mot "${selectedPoem?.targetWord}" est ${
+                        "masculin" === selectedPoem?.targetWordGender
+                          ? "masculin"
+                          : "féminin"
+                      }, pas ${
+                        "masculin" !== selectedPoem?.targetWordGender
+                          ? "masculin"
+                          : "féminin"
+                      }. On dit "un ${selectedPoem?.targetWord}", pas "une ${
+                        selectedPoem?.targetWord
+                      }".`}
                 </p>
                 <div className="flex justify-center space-x-4">
                   <button
@@ -1158,7 +1172,7 @@ export default function JeuPage() {
                   >
                     Rejouer 🔄
                   </button>
-                  {selectedGender === "féminin" && (
+                  {selectedGender !== selectedPoem?.targetWordGender && (
                     <button
                       onClick={() => setSelectedGender("")}
                       className="rounded-full bg-orange-500 px-8 py-3 font-semibold text-white transition-colors hover:bg-orange-600"
