@@ -1,5 +1,6 @@
 import { createClerkSupabaseClientFromHook } from '../client'
 import { Poem as SupabasePoem } from '../types'
+import { WordClassesService } from './wordClassesServices'
 
 // Transform Supabase poem to local poem format
 export function transformSupabasePoem(supabasePoem: SupabasePoem): LocalPoem {
@@ -9,22 +10,22 @@ export function transformSupabasePoem(supabasePoem: SupabasePoem): LocalPoem {
         id: group.id || `group-${Math.random()}`,
         name: group.name || 'Group',
         color: group.color || '#EF4444',
-        wordIndices: group.word_indices || group.wordIndices || [],
-        image: group.image || null
+        wordIndices: group.word_indices || group.wordIndices || []
       }))
     : []
 
   return {
     id: supabasePoem.id,
-    image: supabasePoem.image, // Images handled separately for now
+    image: supabasePoem.image,
     verse: supabasePoem.content,
-    words: supabasePoem.words || [], // Get words from Supabase
+    words: supabasePoem.words || [],
     wordGroups: localWordGroups,
     targetWord: supabasePoem.target_word,
     targetWordGender: (supabasePoem.target_word_gender as 'masculin' | 'féminin') || 'masculin',
     createdAt: supabasePoem.created_at,
     gameParticipatingWords: supabasePoem.game_participating_words || [],
-    wordColors: supabasePoem.word_colors ? JSON.parse(JSON.stringify(supabasePoem.word_colors)) : {}
+    wordColors: supabasePoem.word_colors ? JSON.parse(JSON.stringify(supabasePoem.word_colors)) : {},
+    wordClasses: []
   }
 }
 
@@ -35,22 +36,22 @@ export function transformLocalPoem(localPoem: LocalPoem): Partial<SupabasePoem> 
     id: group.id,
     name: group.name,
     color: group.color,
-    word_indices: group.wordIndices,
-    image: group.image
+    word_indices: group.wordIndices
   }))
 
   return {
+    id: localPoem.id, // Include the ID for updates
     title: `Poem ${localPoem.id}`,
     content: localPoem.verse,
     verses: [localPoem.verse],
-    words: localPoem.words, // Store words in Supabase
+    words: localPoem.words,
     target_word: localPoem.targetWord,
     target_word_gender: localPoem.targetWordGender,
     game_participating_words: localPoem.gameParticipatingWords || [],
     word_groups: supabaseWordGroups as any,
     word_colors: localPoem.wordColors || {},
     difficulty_level: 'medium',
-    image: localPoem.image
+    image: localPoem.image // Include image
   }
 }
 
@@ -66,8 +67,10 @@ export interface LocalPoem {
   createdAt: string
   gameParticipatingWords?: number[]
   wordColors?: {[key: number]: string}
+  wordClasses?: string[] // Available word classes for this poem
 }
 
+// Word classes interface for database storage
 export interface GameWord {
   word: string
   class: string
@@ -80,7 +83,6 @@ export interface LocalWordGroup {
   name: string
   color: string
   wordIndices: number[]
-  image: string | null
 }
 
 export class PoemService {
@@ -103,7 +105,17 @@ export class PoemService {
         throw error
       }
 
-      return (data || []).map(transformSupabasePoem)
+      const poems = (data || []).map(transformSupabasePoem)
+
+      if (poems.length > 0) {
+        const poemIds = poems.map(poem => poem.id).filter(Boolean)
+        const wordClassesMap = await WordClassesService.fetchWordClassesMap(sessionToken, poemIds)
+        poems.forEach(poem => {
+          poem.wordClasses = wordClassesMap[poem.id] ?? []
+        })
+      }
+
+      return poems
     } catch (error) {
       console.error('Failed to fetch poems:', error)
       return []
@@ -162,7 +174,10 @@ export class PoemService {
   static async deletePoem(sessionToken: string, poemId: string): Promise<boolean> {
     try {
       const supabase = createClerkSupabaseClientFromHook(sessionToken)
-      
+
+      // Ensure dependent word classes are removed to satisfy FK constraint
+      await WordClassesService.deleteWordClasses(sessionToken, poemId)
+
       const { error } = await supabase
         .from('poems')
         .delete()

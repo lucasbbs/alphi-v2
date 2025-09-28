@@ -49,8 +49,8 @@ export class ProgressService {
         time_taken: timeTaken,
         score: score,
         user_id: userId,
-        completed_at: new Date().toISOString(),
-        remaining_lives: remaining_lives
+        remaining_lives: remaining_lives,
+        completed_at: new Date().toISOString()
       }
       
       const { data, error } = await supabase
@@ -103,7 +103,7 @@ export class ProgressService {
       const { data, error } = await supabase
         .from('user_stats')
         .select('*')
-        .eq('user_id', user_id) // Filter by user_id
+        .eq('user_id', user_id)
         .single()
 
       if (error && error.code !== 'PGRST116') { // Not found error

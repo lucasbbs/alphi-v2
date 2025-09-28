@@ -92,7 +92,7 @@ export default function GameCreator({
             },
             body: JSON.stringify({
               image: formData.image,
-              expiration: 0, // No expiration for saved images
+              expiration: 0,
             }),
           });
 
@@ -100,7 +100,6 @@ export default function GameCreator({
 
           if (result.success) {
             imageUrl = result.data.display_url; // Use display_url as requested
-            console.log(imageUrl);
             toast.success("Image uploadée avec succès!");
           } else {
             toast.error(`Erreur d'upload: ${result.error}`);

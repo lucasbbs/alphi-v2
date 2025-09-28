@@ -5,22 +5,20 @@ import { useUser, useSession } from "@clerk/nextjs";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/lib/store";
 import { deletePoem } from "@/lib/store/gameSlice";
-import GameCreator from "@/components/admin/GameCreator";
+import MultiStepGameCreator from "@/components/admin/MultiStepGameCreator";
 import { Poem } from "@/lib/store/gameSlice";
 import toast from "react-hot-toast";
 import { Roles } from "types/globals";
-import { useRouter } from "next/navigation";
 import { PencilIcon, Trash2Icon, PlayIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
+  const router = useRouter();
 
   const checkRole = async (role: Roles) => {
     return user?.publicMetadata.role === role;
   };
-
-  const router = useRouter();
-
   useEffect(() => {
     (async () => {
       const result = await checkRole("admin");
@@ -29,7 +27,6 @@ export default function AdminPage() {
       }
     })();
   }, []);
-
   const { session } = useSession();
   const dispatch = useDispatch<AppDispatch>();
   const poems = useSelector((state: RootState) => state.game.poems);
@@ -118,7 +115,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen w-full bg-gradient-to-br from-orange-100 via-orange-50 to-orange-100 p-6">
         <div className="mx-auto max-w-6xl">
-          <GameCreator
+          <MultiStepGameCreator
             editingPoem={editingPoem}
             onCancel={handleBackToDashboard}
             onTestGame={handleTestGame}
@@ -267,7 +264,7 @@ export default function AdminPage() {
                         setEditingPoem(poem);
                         setCurrentView("create-game");
                       }}
-                      className="flex gap-1 rounded bg-gray-500 px-1 py-1 text-sm text-white transition-colors hover:bg-gray-600 sm:px-3 "
+                      className="flex gap-1 rounded bg-gray-500 px-1 py-1  text-sm text-white transition-colors hover:bg-gray-600 sm:px-3 "
                     >
                       <PencilIcon className="h-4 w-4" />
                       <span className="hidden sm:block">Modifier</span>

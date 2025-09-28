@@ -9,6 +9,7 @@ import { ProgressService } from "@/lib/supabase/services/progressService";
 import toast from "react-hot-toast";
 import { Clock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { WordClassesService } from "@/lib/supabase/services/wordClassesServices";
 
 // Types pour le jeu
 interface WordClass {
@@ -50,58 +51,8 @@ interface DroppedLetter {
   customStyle?: { backgroundColor: string };
 }
 
-// Classes de mots avec leurs couleurs et lettres selon le tableau fourni
-const wordClasses: WordClass[] = [
-  { name: "adverbe", color: "bg-orange-400", letter: "H" }, // Demain → Orange → H
-  { name: "déterminant défini", color: "bg-pink-400", letter: "O" }, // L' → Pink → O
-  { name: "verbe", color: "bg-green-400", letter: "R" }, // Viendra → Green → R
-  { name: "déterminant possessif", color: "bg-yellow-400", letter: "A" }, // Sa → Yellow → A
-  { name: "adjectif", color: "bg-red-400", letter: "I" }, // Froide → Red → I
-  { name: "préposition", color: "bg-green-400", letter: "R" }, // Sur → Green → R
-  { name: "nom commun", color: "bg-blue-400", letter: "E" }, // Rêves → Blue → E
-  { name: "pronom", color: "bg-purple-400", letter: "X" }, // X → Purple → X
-  { name: "conjonction", color: "bg-indigo-400", letter: "X" }, // X → Indigo → X
-  { name: "interjection", color: "bg-cyan-400", letter: "X" }, // X → Cyan → X
-];
-
-// Données par défaut (maintenues pour compatibilité)
-const defaultPoems: Poem[] = [
-  {
-    id: "default-1",
-    image: "",
-    verse: "Demain, l'hiver viendra poser sa main froide sur nos rêves.",
-    words: [
-      { word: "Demain", class: "adverbe", isSelected: false }, // H
-      { word: "l'", class: "déterminant défini", isSelected: false }, // O
-      {
-        word: "viendra",
-        class: "verbe",
-        isSelected: false,
-        groupId: "verbe-groupe-1",
-      }, // R
-      {
-        word: "poser",
-        class: "verbe",
-        isSelected: false,
-        groupId: "verbe-groupe-1",
-      },
-      { word: "sa", class: "déterminant possessif", isSelected: false }, // A
-      { word: "froide", class: "adjectif", isSelected: false }, // I
-      { word: "sur", class: "préposition", isSelected: false }, // R
-      { word: "rêves", class: "nom commun", isSelected: false }, // E
-    ],
-    wordGroups: [
-      {
-        id: "verbe-groupe-1",
-        name: "Groupe verbal",
-        color: "#10B981",
-        wordIndices: [2, 3],
-      },
-    ],
-    targetWord: "HORAIRE",
-    targetWordGender: "masculin",
-  },
-];
+// Mapping de couleurs et lettres pour les classes de mots (fallback)
+const wordClassStyleMap: Record<string, { color: string; letter: string }> = {};
 
 export default function JeuPage() {
   const { user } = useUser();
@@ -125,6 +76,8 @@ export default function JeuPage() {
   const [sessionTime, setSessionTime] = useState<number>(0);
   const [gameScore, setGameScore] = useState<number>(0);
   const [availablePoems, setAvailablePoems] = useState<Poem[]>([]);
+  const [wordClasses, setWordClasses] = useState<WordClass[]>([]);
+  const [loadingWordClasses, setLoadingWordClasses] = useState<boolean>(false);
 
   // Fetch poems from Supabase on component mount
   useEffect(() => {
@@ -158,16 +111,63 @@ export default function JeuPage() {
           localStorage.removeItem("alphi-test-poem");
         } else {
           console.warn("Aucun poème de test trouvé dans localStorage");
-          setAvailablePoems(poems.length > 0 ? poems : defaultPoems);
+          setAvailablePoems(poems);
         }
       } catch (error) {
         console.error("Erreur lors du parsing du poème de test:", error);
-        setAvailablePoems(poems.length > 0 ? poems : defaultPoems);
+        setAvailablePoems(poems);
       }
     } else {
-      setAvailablePoems(poems.length > 0 ? poems : defaultPoems);
+      setAvailablePoems(poems);
     }
   }, [poems, searchParams]);
+
+  // Function to build WordClass objects from string array
+  const buildWordClassesFromStrings = (
+    wordClassNames: string[],
+  ): WordClass[] => {
+    return wordClassNames.map((name) => ({
+      name,
+      color: wordClassStyleMap[name]?.color || "bg-gray-400",
+      letter: wordClassStyleMap[name]?.letter || "X",
+    }));
+  };
+
+  // Fetch word classes when a poem is selected
+  useEffect(() => {
+    const loadWordClasses = async () => {
+      if (!selectedPoem || !session) return;
+
+      setLoadingWordClasses(true);
+      try {
+        const sessionToken = await session.getToken({ template: "supabase" });
+        if (sessionToken) {
+          const wordClassNames = await WordClassesService.fetchWordClasses(
+            sessionToken,
+            String(selectedPoem.id),
+          );
+
+          if (wordClassNames.length > 0) {
+            setWordClasses(buildWordClassesFromStrings(wordClassNames));
+          } else {
+            // Fallback to default classes if none found in database
+            const defaultClasses = Object.keys(wordClassStyleMap);
+            setWordClasses(buildWordClassesFromStrings(defaultClasses));
+          }
+        }
+      } catch (error) {
+        console.error("Error loading word classes:", error);
+        // Fallback to default classes on error
+        const defaultClasses = Object.keys(wordClassStyleMap);
+        setWordClasses(buildWordClassesFromStrings(defaultClasses));
+        toast.error("Erreur lors du chargement des classes de mots");
+      } finally {
+        setLoadingWordClasses(false);
+      }
+    };
+
+    loadWordClasses();
+  }, [selectedPoem, session]);
 
   const handlePoemSelection = (poem: Poem) => {
     setSelectedPoem(poem);
@@ -571,7 +571,7 @@ export default function JeuPage() {
                   className="cursor-pointer rounded-2xl border-4 border-transparent bg-gradient-to-br from-orange-200 to-pink-200 p-6 transition-transform duration-200 hover:scale-105 hover:border-orange-400"
                   onClick={() => handlePoemSelection(poem)}
                 >
-                  <div className="mb-4 flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-orange-300">
+                  <div className="flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-orange-300">
                     {poem.image ? (
                       <img
                         src={poem.image}
@@ -596,7 +596,7 @@ export default function JeuPage() {
             </h2>
             <div className="mb-8 rounded-2xl bg-gray-50 p-6">
               <h3 className="mb-4 font-semibold text-gray-800">
-                Vers ou poème sélectionné :
+                Vers sélectionné :
               </h3>
               <p className="text-lg text-gray-700">
                 {(() => {
@@ -778,8 +778,13 @@ export default function JeuPage() {
                               e.target.value,
                             )
                           }
+                          disabled={loadingWordClasses}
                         >
-                          <option value="">Choisir une classe...</option>
+                          <option value="">
+                            {loadingWordClasses
+                              ? "Chargement..."
+                              : "Choisir une classe..."}
+                          </option>
                           {wordClasses.map((wc) => (
                             <option key={wc.name} value={wc.name}>
                               {wc.name}
@@ -797,11 +802,24 @@ export default function JeuPage() {
                   Classes de mots :
                 </h4>
                 <div className="space-y-2">
-                  {wordClasses.map((wc) => (
-                    <div key={wc.name} className="flex items-center">
-                      <span className="text-gray-700">{wc.name}</span>
+                  {loadingWordClasses ? (
+                    <div className="text-sm text-gray-500">
+                      Chargement des classes de mots...
                     </div>
-                  ))}
+                  ) : wordClasses.length > 0 ? (
+                    wordClasses.map((wc) => (
+                      <div
+                        key={wc.name}
+                        className="flex items-center space-x-2"
+                      >
+                        <span className="text-gray-700">{wc.name}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">
+                      Aucune classe de mots disponible.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
