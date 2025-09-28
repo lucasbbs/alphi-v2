@@ -1,4 +1,4 @@
-import { BuyMeACoffee } from "../shared/icons";
+import BuyMeACoffee from "../shared/buymeacoffee";
 
 export default function Footer() {
   return (

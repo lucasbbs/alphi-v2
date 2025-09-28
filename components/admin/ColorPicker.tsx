@@ -8,7 +8,6 @@ interface ColorPickerProps {
   label?: string;
 }
 
-// Palette de 20 couleurs distinctes et accessibles
 const COLOR_PALETTE = [
   "#882d17",
   "#f99379",
