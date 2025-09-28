@@ -41,17 +41,15 @@ const STEPS = [
   {
     id: 1,
     title: "Classes grammaticales",
-    description: "Sélectionner les classes à utiliser",
   },
-  { id: 2, title: "Image", description: "Choisir une image pour le poème" },
-  { id: 3, title: "Vers", description: "Saisir le vers du poème" },
+  { id: 2, title: "Image" },
+  { id: 3, title: "Vers" },
   {
     id: 4,
     title: "Classification",
-    description: "Attribuer les classes aux mots",
   },
-  { id: 5, title: "Mot mystère", description: "Définir le mot secret" },
-  { id: 6, title: "Genre", description: "Choisir le genre du mot mystère" },
+  { id: 5, title: "Mot mystère" },
+  { id: 6, title: "Genre" },
 ];
 
 export default function MultiStepGameCreator({
@@ -155,7 +153,6 @@ export default function MultiStepGameCreator({
   };
 
   const canCompleteForm = () => {
-    // Check that all required steps are completed
     for (let step = 1; step <= STEPS.length; step++) {
       if (!validateStep(step)) {
         return false;
@@ -415,37 +412,37 @@ export default function MultiStepGameCreator({
 
       {/* Progress Steps */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {STEPS.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                  currentStep >= step.id
-                    ? "border-orange-500 bg-orange-500 text-white"
-                    : "border-gray-300 bg-white text-gray-400"
+        <div className="flex flex-wrap items-center gap-1">
+          {STEPS.map((step) => {
+            const isActive = step.id === currentStep;
+            const isCompleted = step.id < currentStep;
+            return (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => (isCompleted || isActive ? handleNext() : null)}
+                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
+                  isActive
+                    ? "border-orange-500 bg-orange-50 text-orange-600 shadow-sm"
+                    : isCompleted
+                    ? "border-orange-300 bg-white text-orange-500"
+                    : "border-gray-200 text-gray-500 hover:border-orange-300 hover:text-orange-500"
                 }`}
+                disabled={step.id > currentStep}
               >
-                {step.id}
-              </div>
-              <div className="ml-3 hidden sm:block">
-                <p
-                  className={`text-sm font-medium ${
-                    currentStep >= step.id ? "text-orange-600" : "text-gray-500"
+                <span
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
+                    isActive || isCompleted
+                      ? "bg-orange-500 text-white"
+                      : "bg-gray-200 text-gray-600"
                   }`}
                 >
-                  {step.title}
-                </p>
-                <p className="text-xs text-gray-400">{step.description}</p>
-              </div>
-              {index < STEPS.length - 1 && (
-                <div
-                  className={`mx-4 h-0.5 w-16 ${
-                    currentStep > step.id ? "bg-orange-500" : "bg-gray-300"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
+                  {step.id}
+                </span>
+                <span>{step.title}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
