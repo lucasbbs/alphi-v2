@@ -335,7 +335,13 @@ export default function JeuPage() {
   };
 
   const handleLetterDrop = (letter: DroppedLetter) => {
-    const targetWord = selectedPoem?.targetWord || "HORAIRE";
+    // Ensure we have a valid selected poem with target word
+    if (!selectedPoem || !selectedPoem.targetWord) {
+      toast.error("Erreur: Aucun poème sélectionné ou mot mystère manquant");
+      return;
+    }
+    
+    const targetWord = selectedPoem.targetWord;
     const maxLetters = targetWord.length;
 
     if (droppedLetters.length < maxLetters) {
@@ -357,7 +363,14 @@ export default function JeuPage() {
 
   const checkWordInStep3 = () => {
     const formedWord = droppedLetters.map((l) => l.letter).join("");
-    const targetWord = selectedPoem?.targetWord || "HORAIRE";
+    
+    // Ensure we have a valid selected poem with target word
+    if (!selectedPoem || !selectedPoem.targetWord) {
+      toast.error("Erreur: Aucun poème sélectionné ou mot mystère manquant");
+      return;
+    }
+    
+    const targetWord = selectedPoem.targetWord;
 
     // Compare using normalized versions to handle accented characters
     if (normalizeForComparison(formedWord) === normalizeForComparison(targetWord)) {
@@ -373,18 +386,38 @@ export default function JeuPage() {
 
   const handleGenderSelection = (gender: string) => {
     if (gameOver || selectedGender) return; // Empêcher multiples sélections
+    
+    // Ensure we have a valid selected poem with all required data
+    if (!selectedPoem || !selectedPoem.targetWord || !selectedPoem.targetWordGender) {
+      toast.error("Erreur: Données du poème manquantes (mot mystère ou genre)");
+      return;
+    }
+    
     setSelectedGender(gender);
 
-    const correctGender = selectedPoem?.targetWordGender || "masculin";
+    const correctGender = selectedPoem.targetWordGender;
+    const targetWord = selectedPoem.targetWord;
+    
+    // Debug logging to verify correct values are being used
+    console.log('Gender Selection Debug:', {
+      selectedPoem: selectedPoem,
+      targetWord: targetWord,
+      targetWordGender: selectedPoem.targetWordGender,
+      correctGender: correctGender,
+      selectedGender: gender
+    });
 
     if (gender !== correctGender) {
       loseLife();
+      toast.error(`❌ Incorrect! Le mot "${targetWord}" est ${correctGender}.`, {
+        duration: 3000,
+      });
     } else {
       // Jeu terminé avec succès - calculer et enregistrer le score
       const finalScore = calculateScore();
       setGameScore(finalScore);
       setGameOver(true); // Arrêter le timer
-      toast.success(`🎉 Félicitations ! Score: ${finalScore} points`, {
+      toast.success(`🎉 Correct! Le mot "${targetWord}" est bien ${correctGender}. Score: ${finalScore} points`, {
         duration: 4000,
       });
 
