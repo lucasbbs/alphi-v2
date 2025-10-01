@@ -1,4 +1,7 @@
-import { createClerkSupabaseClientFromHook } from '../client'
+import {
+  createClerkSupabaseClientFromHook,
+  supabase,
+} from '../client'
 import { Poem as SupabasePoem } from '../types'
 import { WordClassesService } from './wordClassesServices'
 
@@ -91,11 +94,17 @@ export class PoemService {
     throw new Error('PoemService methods must be called from components with access to Clerk session')
   }
 
+  private static getClient(sessionToken?: string) {
+    return sessionToken
+      ? createClerkSupabaseClientFromHook(sessionToken)
+      : supabase
+  }
+
   static async fetchPoems(sessionToken: string): Promise<LocalPoem[]> {
     try {
-      const supabase = createClerkSupabaseClientFromHook(sessionToken)
+      const client = this.getClient(sessionToken)
       
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('poems')
         .select('*')
         .order('created_at', { ascending: false })
@@ -118,6 +127,35 @@ export class PoemService {
       return poems
     } catch (error) {
       console.error('Failed to fetch poems:', error)
+      return []
+    }
+  }
+
+  static async fetchPoemsPublic(): Promise<LocalPoem[]> {
+    try {
+      const { data, error } = await supabase
+        .from('poems')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching public poems:', error)
+        throw error
+      }
+
+      const poems = (data || []).map(transformSupabasePoem)
+
+      if (poems.length > 0) {
+        const poemIds = poems.map(poem => poem.id).filter(Boolean)
+        const wordClassesMap = await WordClassesService.fetchWordClassesMapPublic(poemIds)
+        poems.forEach(poem => {
+          poem.wordClasses = wordClassesMap[poem.id] ?? []
+        })
+      }
+
+      return poems
+    } catch (error) {
+      console.error('Failed to fetch public poems:', error)
       return []
     }
   }

@@ -34,12 +34,20 @@ export default function Home() {
           style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
         >
           <SignedOut>
-            <SignInButton mode="modal">
-              <button className="group flex max-w-fit items-center justify-center space-x-2 rounded-full bg-orange-500 px-6 py-3 text-white shadow-lg transition-colors hover:bg-orange-600">
-                <span className="text-lg">🎮</span>
-                <p className="font-semibold">Commencer à Jouer</p>
-              </button>
-            </SignInButton>
+            <div className="flex flex-col items-center gap-3 sm:flex-row">
+              <SignInButton mode="modal">
+                <button className="group flex max-w-fit items-center justify-center space-x-2 rounded-full bg-orange-500 px-6 py-3 text-white shadow-lg transition-colors hover:bg-orange-600">
+                  <span className="text-lg">🎮</span>
+                  <p className="font-semibold">Commencer à Jouer</p>
+                </button>
+              </SignInButton>
+              <Link href="/decouverte">
+                <button className="group flex max-w-fit items-center justify-center space-x-2 rounded-full border-2 border-orange-500 bg-white px-6 py-3 text-orange-500 shadow-md transition-colors hover:bg-orange-50">
+                  <span className="text-lg">✨</span>
+                  <p className="font-semibold">Découvrir sans compte</p>
+                </button>
+              </Link>
+            </div>
           </SignedOut>
           <SignedIn>
             <Link href="/jeu">

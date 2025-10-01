@@ -15,6 +15,7 @@ import {
   GameProgress,
 } from "@/lib/supabase/services/progressService";
 import { PoemService } from "@/lib/supabase/services/poemService";
+import { GuestProgressService } from "@/lib/services/guestProgressService";
 
 interface GameData {
   date: string;
@@ -28,6 +29,7 @@ interface GameData {
 export default function ProgresPage() {
   const { user } = useUser();
   const { session } = useSession();
+  const isGuest = !user;
   const [gameHistory, setGameHistory] = useState<GameData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -39,8 +41,42 @@ export default function ProgresPage() {
   });
 
   useEffect(() => {
+    if (isGuest) {
+      const rounds = GuestProgressService.getRounds();
+      setIsLoading(true);
+
+      const transformedHistory: GameData[] = rounds.map((round) => ({
+        date: round.playedAt,
+        score: round.score,
+        time: round.time,
+        verse: round.verse,
+        lives: round.remainingLives,
+        remaining_lives: round.remainingLives,
+      }));
+
+      const guestStats = GuestProgressService.getStats();
+      const totalGames = rounds.length;
+      const totalTime = rounds.reduce((sum, round) => sum + round.time, 0);
+      const perfectGames = rounds.filter((round) => round.remainingLives === 3)
+        .length;
+
+      setGameHistory(transformedHistory);
+      setStats({
+        totalGames,
+        averageScore:
+          totalGames > 0 ? Math.round(guestStats.averageScore) : 0,
+        averageTime: totalGames > 0 ? Math.round(totalTime / totalGames) : 0,
+        highestScore: guestStats.bestScore,
+        perfectGames,
+      });
+      setIsLoading(false);
+      return;
+    }
+
     const fetchUserData = async () => {
-      if (!session) return;
+      if (!session || !user) {
+        return;
+      }
 
       try {
         setIsLoading(true);
@@ -51,29 +87,33 @@ export default function ProgresPage() {
           return;
         }
 
-        // Fetch both stats and progress from Supabase
         const [userStats, userProgress, poems] = await Promise.all([
-          ProgressService.getUserStats(sessionToken, user!.id),
-          ProgressService.getUserProgress(sessionToken, user!.id),
+          ProgressService.getUserStats(sessionToken, user.id),
+          ProgressService.getUserProgress(sessionToken, user.id),
           PoemService.fetchPoems(sessionToken),
         ]);
 
-        // Transform progress data to match GameData format
         const transformedHistory: GameData[] = userProgress.map(
-          (progress: GameProgress) => ({
-            date: progress.completed_at || new Date().toISOString(),
-            score: progress.score,
-            time: progress.time_taken,
-            verse: poems.find((p) => p.id === progress.poem_id)?.verse ?? "",
-            lives: progress.score >= 90 ? 3 : progress.score >= 60 ? 2 : 1,
-            remaining_lives: progress.remaining_lives,
-          }),
+          (progress: GameProgress) => {
+            const remainingLives =
+              typeof progress.remaining_lives === "number"
+                ? progress.remaining_lives
+                : 0;
+
+            return {
+              date: progress.completed_at || new Date().toISOString(),
+              score: progress.score,
+              time: progress.time_taken,
+              verse: poems.find((p) => p.id === progress.poem_id)?.verse ?? "",
+              lives: remainingLives || 3,
+              remaining_lives: remainingLives || 3,
+            };
+          },
         );
 
         setGameHistory(transformedHistory);
 
-        // Use Supabase stats if available, otherwise calculate from progress
-        if (userStats) {
+        if (userStats && userStats.total_games_played > 0) {
           setStats({
             totalGames: userStats.total_games_played,
             averageScore: Math.round(userStats.average_score),
@@ -86,7 +126,6 @@ export default function ProgresPage() {
             ).length,
           });
         } else if (transformedHistory.length > 0) {
-          // Fallback: calculate stats from progress data
           const totalScore = transformedHistory.reduce(
             (sum, game) => sum + game.score,
             0,
@@ -108,6 +147,14 @@ export default function ProgresPage() {
             ),
             perfectGames,
           });
+        } else {
+          setStats({
+            totalGames: 0,
+            averageScore: 0,
+            averageTime: 0,
+            highestScore: 0,
+            perfectGames: 0,
+          });
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -117,7 +164,7 @@ export default function ProgresPage() {
     };
 
     fetchUserData();
-  }, [session]);
+  }, [isGuest, session, user]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -138,8 +185,9 @@ export default function ProgresPage() {
 
   const clearHistory = async () => {
     if (confirm("Êtes-vous sûr de vouloir effacer tout votre historique ?")) {
-      // Note: This would require implementing a clear function in ProgressService
-      // For now, just reset the local state
+      if (isGuest) {
+        GuestProgressService.clearAll();
+      }
       setGameHistory([]);
       setStats({
         totalGames: 0,
@@ -150,21 +198,6 @@ export default function ProgresPage() {
       });
     }
   };
-
-  if (!user) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-br from-orange-100 via-pink-50 to-teal-100">
-        <div className="text-center">
-          <h1 className="mb-4 text-2xl font-bold text-gray-800">
-            Connectez-vous pour voir vos progrès !
-          </h1>
-          <p className="text-gray-600">
-            Vous devez être connecté pour accéder à votre historique.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -193,12 +226,16 @@ export default function ProgresPage() {
                 📊 Mes Progrès
               </h1>
               <p className="text-gray-600">
-                Bonjour {user.firstName} ! Voici ton parcours d'apprentissage
+                {isGuest
+                  ? "Statistiques enregistrées sur cet appareil. Crée un compte pour les sauvegarder en ligne."
+                  : `Bonjour ${
+                      user.firstName || user.username || ""
+                    } ! Voici ton parcours d'apprentissage`}
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <a
-                href="/jeu"
+                href={isGuest ? "/decouverte" : "/jeu"}
                 className="rounded-full bg-orange-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-orange-600"
               >
                 🎮 Jouer
@@ -225,7 +262,7 @@ export default function ProgresPage() {
               Commencez à jouer pour voir vos progrès ici !
             </p>
             <a
-              href="/jeu"
+              href={isGuest ? "/decouverte" : "/jeu"}
               className="inline-block rounded-full bg-orange-500 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-orange-600"
             >
               🚀 Commencer à jouer

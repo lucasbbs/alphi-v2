@@ -1,4 +1,7 @@
-import { createClerkSupabaseClientFromHook } from '../client'
+import {
+  createClerkSupabaseClientFromHook,
+  supabase,
+} from '../client'
 
 export interface WordClassesRecord {
   id: string
@@ -7,9 +10,9 @@ export interface WordClassesRecord {
 }
 
 export class WordClassesService {
-  private static getClient(sessionToken: string) {
+  private static getClient(sessionToken?: string) {
     if (!sessionToken) {
-      throw new Error('Session token is required to access word classes')
+      return supabase
     }
     return createClerkSupabaseClientFromHook(sessionToken)
   }
@@ -20,8 +23,12 @@ export class WordClassesService {
     }
 
     try {
-      const supabase = this.getClient(sessionToken)
-      const { data, error } = await supabase
+      if (!sessionToken) {
+        throw new Error('Session token is required to fetch private word classes')
+      }
+
+      const client = this.getClient(sessionToken)
+      const { data, error } = await client
         .from('word_classes')
         .select('word_classes')
         .eq('id', poemId)
@@ -48,8 +55,12 @@ export class WordClassesService {
     }
 
     try {
-      const supabase = this.getClient(sessionToken)
-      const { data, error } = await supabase
+      if (!sessionToken) {
+        throw new Error('Session token is required to fetch private word classes map')
+      }
+
+      const client = this.getClient(sessionToken)
+      const { data, error } = await client
         .from('word_classes')
         .select('id, word_classes')
         .in('id', poemIds)
@@ -128,6 +139,38 @@ export class WordClassesService {
     } catch (error) {
       console.error('Failed to delete word classes:', error)
       return false
+    }
+  }
+
+  static async fetchWordClassesMapPublic(
+    poemIds: string[]
+  ): Promise<Record<string, string[]>> {
+    if (!poemIds.length) {
+      return {}
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('word_classes')
+        .select('id, word_classes')
+        .in('id', poemIds)
+
+      if (error) {
+        console.error('Error fetching public word classes map:', error)
+        return {}
+      }
+
+      return (data || []).reduce<Record<string, string[]>>((acc, record) => {
+        if (record?.id) {
+          acc[record.id] = Array.isArray(record.word_classes)
+            ? record.word_classes
+            : []
+        }
+        return acc
+      }, {})
+    } catch (error) {
+      console.error('Failed to fetch public word classes map:', error)
+      return {}
     }
   }
 }

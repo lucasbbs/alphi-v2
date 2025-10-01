@@ -51,33 +51,29 @@ export default function NavBar() {
           </Link>
 
           <div className="flex flex-col items-center gap-2 md:flex-row md:space-x-6">
-            <SignedIn>
+            <Link
+              href={user ? "/jeu" : "/decouverte"}
+              className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
+            >
+              <span>🎮</span>
+              <span>{user ? "Jouer" : "Découvrir"}</span>
+            </Link>
+            {isAdmin && user && (
               <Link
-                href="/jeu"
+                href="/admin"
                 className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
               >
-                <span>🎮</span>
-                <span>Jouer</span>
+                <span>👩‍🏫</span>
+                <span>Administration</span>
               </Link>
-            </SignedIn>
-            <SignedIn>
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
-                >
-                  <span>👩‍🏫</span>
-                  <span>Administration</span>
-                </Link>
-              )}
-              <Link
-                href="/progres"
-                className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
-              >
-                <span>📈</span>
-                <span>Mes Progrès</span>
-              </Link>
-            </SignedIn>
+            )}
+            <Link
+              href="/progres"
+              className="flex items-center space-x-1 rounded-lg bg-pink-100 px-2 py-0.5 font-medium text-gray-600 transition-colors hover:text-orange-600 active:bg-pink-800 active:text-white"
+            >
+              <span>📈</span>
+              <span>Mes Progrès</span>
+            </Link>
           </div>
 
           <div className="flex items-center space-x-4">
